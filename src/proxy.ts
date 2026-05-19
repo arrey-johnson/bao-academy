@@ -6,7 +6,13 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Only run auth proxy on routes that need it (keeps / and static assets fast).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/dashboard/:path*",
+    "/learn/:path*",
+    "/assignments/:path*",
+    "/login",
+    "/signup",
+    "/auth/callback",
   ],
 };
