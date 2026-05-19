@@ -9,15 +9,19 @@ export default function AdminNewCoursePage() {
   return (
     <div>
       <DashboardHeader
-        title="New course"
-        description="Create a course, then add modules, lessons, and slides."
+        title="Create course"
+        description="Add a new course, then build modules, lessons, and slides on the next screen."
         action={
-          <Link href="/admin/courses" className="text-sm text-secondary hover:text-[var(--foreground)]">
-            ← Courses
+          <Link
+            href="/admin/courses"
+            className="text-sm text-secondary hover:text-[var(--foreground)]"
+          >
+            ← All courses
           </Link>
         }
       />
-      <PanelCard>
+
+      <PanelCard title="Course details">
         <CourseForm />
       </PanelCard>
     </div>

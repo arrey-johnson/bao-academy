@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BookOpen, Settings } from "lucide-react";
 import { deleteCourse } from "@/app/actions/admin";
 import { getCourseWithCurriculum } from "@/lib/admin/queries";
 import { AddModuleForm, ModuleBlock } from "@/components/admin/CurriculumForms";
@@ -30,53 +31,91 @@ export default async function AdminCourseDetailPage({ params }: Props) {
 
   const { course, modules } = data;
   const moduleRows = modules as ModuleRow[];
+  const lessonCount = moduleRows.reduce((n, m) => n + (m.lessons?.length ?? 0), 0);
 
   return (
     <div>
       <DashboardHeader
         title={course.title}
-        description={`/${course.slug}`}
+        description={`Manage settings and curriculum · /learn/${course.slug}`}
         action={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={course.published ? "badge badge-accent" : "badge"}>
+              {course.published ? "Published" : "Draft"}
+            </span>
             <TogglePublishedButton courseId={course.id} published={course.published} />
-            <Link href={`/learn/${course.slug}`}>
+            <Link href={`/learn/${course.slug}`} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm">
                 Preview
               </Button>
             </Link>
-            <Link href="/admin/courses" className="self-center text-sm text-secondary hover:text-[var(--foreground)]">
-              ← Courses
+            <Link
+              href="/admin/courses"
+              className="text-sm text-secondary hover:text-[var(--foreground)]"
+            >
+              ← All courses
             </Link>
           </div>
         }
       />
 
-      <PanelCard title="Course settings" className="mb-6">
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <PanelCard className="!p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted">Modules</p>
+          <p className="mt-1 text-2xl font-bold">{moduleRows.length}</p>
+        </PanelCard>
+        <PanelCard className="!p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted">Lessons</p>
+          <p className="mt-1 text-2xl font-bold">{lessonCount}</p>
+        </PanelCard>
+        <PanelCard className="!p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted">Sort order</p>
+          <p className="mt-1 text-2xl font-bold">{course.sort_order}</p>
+        </PanelCard>
+      </div>
+
+      <PanelCard
+        title="Course settings"
+        description="Title, slug, description, track, and publish status"
+        icon={<Settings className="h-4 w-4 text-bao-light" />}
+        className="mb-6"
+      >
         <CourseForm course={course} />
       </PanelCard>
 
-      <PanelCard title="Curriculum" className="mb-6">
+      <PanelCard
+        title="Curriculum"
+        description="Modules and lessons — click a lesson to edit slides"
+        icon={<BookOpen className="h-4 w-4 text-bao-light" />}
+        className="mb-6"
+      >
         <AddModuleForm courseId={course.id} />
         <div className="mt-6 space-y-4">
-          {moduleRows.map((m) => (
-            <ModuleBlock
-              key={m.id}
-              moduleId={m.id}
-              title={m.title}
-              lessons={m.lessons ?? []}
-              courseId={course.id}
-            />
-          ))}
-          {!moduleRows.length && (
-            <p className="text-sm text-muted">Add a module to start building curriculum.</p>
+          {moduleRows.length ? (
+            moduleRows.map((m) => (
+              <ModuleBlock
+                key={m.id}
+                moduleId={m.id}
+                title={m.title}
+                lessons={m.lessons ?? []}
+                courseId={course.id}
+              />
+            ))
+          ) : (
+            <p className="rounded-xl border border-dashed border-[var(--border)] px-4 py-8 text-center text-sm text-muted">
+              No modules yet. Add a module above, then add lessons inside it.
+            </p>
           )}
         </div>
       </PanelCard>
 
       <PanelCard title="Danger zone">
+        <p className="mb-4 text-sm text-secondary">
+          Permanently deletes this course and all modules, lessons, slides, and enrollments.
+        </p>
         <DeleteButton
           label="Delete course"
-          confirmMessage="Delete this course and all modules, lessons, and slides?"
+          confirmMessage={`Delete "${course.title}" and all its content?`}
           onDelete={() => deleteCourse(course.id)}
           redirectTo="/admin/courses"
         />

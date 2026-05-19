@@ -178,23 +178,39 @@ export async function removeEnrollment(enrollmentId: string): Promise<ActionResu
 
 // ——— Courses ———
 
+function formatDbError(message: string): string {
+  if (message.includes("courses_slug_key") || message.includes("duplicate key")) {
+    return "A course with this URL slug already exists. Choose a different slug.";
+  }
+  return message;
+}
+
 export async function createCourse(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { supabase } = await getAdminContext();
+    const { service } = await getAdminContext();
     const title = String(formData.get("title") ?? "").trim();
     const slug = String(formData.get("slug") ?? "").trim() || slugify(title);
-    const description = String(formData.get("description") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim() || null;
     const track = String(formData.get("track") ?? "html-css-js").trim();
     const published = formData.get("published") === "on";
+    const sortOrder = Number(formData.get("sortOrder") ?? 0);
 
     if (!title) return { ok: false, error: "Title is required." };
+    if (!slug) return { ok: false, error: "URL slug is required." };
 
-    const { data, error } = await supabase
+    const { data, error } = await service
       .from("courses")
-      .insert({ title, slug, description, track, published, sort_order: 0 })
+      .insert({
+        title,
+        slug,
+        description,
+        track,
+        published,
+        sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
+      })
       .select("id")
       .single();
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: formatDbError(error.message) };
     revalidateAdmin();
     return { ok: true, data: { id: data.id } };
   } catch (e) {
@@ -204,16 +220,21 @@ export async function createCourse(formData: FormData): Promise<ActionResult<{ i
 
 export async function updateCourse(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await getAdminContext();
+    const { service } = await getAdminContext();
     const id = String(formData.get("id") ?? "");
     const title = String(formData.get("title") ?? "").trim();
-    const slug = String(formData.get("slug") ?? "").trim();
-    const description = String(formData.get("description") ?? "").trim();
-    const track = String(formData.get("track") ?? "").trim();
+    const slug =
+      String(formData.get("slug") ?? "").trim() || slugify(title);
+    const description = String(formData.get("description") ?? "").trim() || null;
+    const track = String(formData.get("track") ?? "html-css-js").trim();
     const published = formData.get("published") === "on";
     const sortOrder = Number(formData.get("sortOrder") ?? 0);
 
-    const { error } = await supabase
+    if (!id) return { ok: false, error: "Course ID is required." };
+    if (!title) return { ok: false, error: "Title is required." };
+    if (!slug) return { ok: false, error: "URL slug is required." };
+
+    const { error } = await service
       .from("courses")
       .update({
         title,
@@ -221,10 +242,10 @@ export async function updateCourse(formData: FormData): Promise<ActionResult> {
         description,
         track,
         published,
-        sort_order: sortOrder,
+        sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
       })
       .eq("id", id);
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: formatDbError(error.message) };
     revalidateAdmin();
     return { ok: true };
   } catch (e) {
@@ -234,8 +255,10 @@ export async function updateCourse(formData: FormData): Promise<ActionResult> {
 
 export async function deleteCourse(courseId: string): Promise<ActionResult> {
   try {
-    const { supabase } = await getAdminContext();
-    const { error } = await supabase.from("courses").delete().eq("id", courseId);
+    const { service } = await getAdminContext();
+    if (!courseId) return { ok: false, error: "Course ID is required." };
+
+    const { error } = await service.from("courses").delete().eq("id", courseId);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
     return { ok: true };
@@ -246,8 +269,8 @@ export async function deleteCourse(courseId: string): Promise<ActionResult> {
 
 export async function toggleCoursePublished(courseId: string, published: boolean): Promise<ActionResult> {
   try {
-    const { supabase } = await getAdminContext();
-    const { error } = await supabase.from("courses").update({ published }).eq("id", courseId);
+    const { service } = await getAdminContext();
+    const { error } = await service.from("courses").update({ published }).eq("id", courseId);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
     return { ok: true };
