@@ -1,155 +1,209 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { ArrowRight, BookOpen, Flame, Megaphone } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { Card } from "@/components/ui/card";
+import {
+  ArrowRight,
+  BookOpen,
+  ClipboardList,
+  Flame,
+  Megaphone,
+  Sparkles,
+} from "lucide-react";
+import {
+  getContinueLesson,
+  getFirstLessonSlug,
+  getPrimaryEnrollment,
+  getStudentAnnouncements,
+  getStudentAssignments,
+} from "@/lib/student/queries";
+import { relationOne } from "@/lib/student/utils";
+import { requireStudent } from "@/lib/student/require-student";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { PanelCard } from "@/components/dashboard/PanelCard";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { StatusBadge } from "@/components/student/StatusBadge";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { profile, user } = await requireStudent();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const primary = await getPrimaryEnrollment(user.id);
+  const course = relationOne(
+    primary?.courses as
+      | { id: string; title: string; slug: string; description: string | null }
+      | { id: string; title: string; slug: string; description: string | null }[]
+      | null
+  );
 
-  const { data: courses } = await supabase
-    .from("courses")
-    .select("*")
-    .eq("published", true)
-    .order("sort_order");
+  const lastLesson = await getContinueLesson(user.id, primary?.last_lesson_id ?? null);
+  const firstLessonSlug = course ? await getFirstLessonSlug(course.id) : null;
+  const continueSlug = lastLesson?.slug ?? firstLessonSlug ?? "css-flexbox";
+  const progress = Number(primary?.progress_percent ?? 0);
 
-  const primaryCourse = courses?.[0];
-  let enrollment = null;
-  let lastLesson: { slug: string; title: string } | null = null;
+  const [announcements, assignments] = await Promise.all([
+    getStudentAnnouncements(user.id, 3),
+    getStudentAssignments(user.id),
+  ]);
 
-  if (primaryCourse) {
-    const { data } = await supabase
-      .from("enrollments")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("course_id", primaryCourse.id)
-      .maybeSingle();
-    enrollment = data;
+  const pendingAssignments = assignments.filter(
+    (a) => !a.submission || a.submission.status === "draft"
+  );
+  const needsRevision = assignments.filter(
+    (a) => a.submission?.status === "needs_revision"
+  );
 
-    if (!enrollment) {
-      await supabase.from("enrollments").insert({
-        user_id: user.id,
-        course_id: primaryCourse.id,
-        progress_percent: 0,
-      });
-      enrollment = {
-        progress_percent: 0,
-        last_lesson_id: null,
-      } as typeof enrollment;
-    }
-
-    if (enrollment?.last_lesson_id) {
-      const { data: lesson } = await supabase
-        .from("lessons")
-        .select("slug, title")
-        .eq("id", enrollment.last_lesson_id)
-        .single();
-      lastLesson = lesson;
-    }
-  }
-
-  const { data: announcements } = await supabase
-    .from("announcements")
-    .select("*")
-    .order("published_at", { ascending: false })
-    .limit(3);
-
-  const continueSlug = lastLesson?.slug ?? "css-flexbox";
-  const progress = Number(enrollment?.progress_percent ?? 0);
+  const firstName = profile.full_name?.split(" ")[0] ?? "builder";
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="mb-10">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Hey, {profile?.full_name ?? "builder"} 👋
-        </h1>
-        <p className="mt-2 text-zinc-500">Ready to ship something today?</p>
-      </div>
+    <div>
+      <DashboardHeader
+        eyebrow="Your workspace"
+        title={`Hey, ${firstName} 👋`}
+        description="Pick up where you left off — ship another lesson today."
+      />
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2 border-bao/20 bg-gradient-to-br from-bao/5 to-transparent">
-          <p className="text-sm font-medium text-bao-light">
-            Continue learning
+      {!course ? (
+        <PanelCard accent className="mb-6">
+          <p className="text-secondary">
+            You are not enrolled in a course yet. Browse available courses and start learning.
           </p>
-          <h2 className="mt-2 text-xl font-semibold">
-            {lastLesson?.title ?? "CSS Flexbox"}
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            {primaryCourse?.title ?? "HTML, CSS & JavaScript"}
-          </p>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-800">
-            <div
-              className="h-full rounded-full bg-bao transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-zinc-400">{progress}% complete</p>
+          <Link href="/dashboard/courses" className="mt-4 inline-block">
+            <Button>Browse courses</Button>
+          </Link>
+        </PanelCard>
+      ) : (
+        <div className="grid gap-5 md:grid-cols-3">
+          <PanelCard accent className="md:col-span-2">
+            <p className="flex items-center gap-2 text-sm font-semibold text-bao-light">
+              <Sparkles className="h-4 w-4" />
+              Continue learning
+            </p>
+            <h2 className="mt-3 text-2xl font-bold text-[var(--foreground)]">
+              {lastLesson?.title ?? "Start your first lesson"}
+            </h2>
+            <p className="mt-1 text-secondary">{course.title}</p>
+            <div className="mt-6">
+              <div className="mb-2 flex justify-between text-xs">
+                <span className="text-secondary">Course progress</span>
+                <span className="font-medium text-[var(--foreground)]">{progress}%</span>
+              </div>
+              <div className="progress-track h-2.5">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${Math.min(progress, 100)}%` }}
+                />
+              </div>
+            </div>
+            <Link
+              href={`/learn/${course.slug}/${continueSlug}`}
+              className="mt-8 inline-block"
+            >
+              <Button size="lg" className="gap-2">
+                Continue lesson
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </PanelCard>
+
+          <StatCard
+            label="Day streak"
+            value={profile.current_streak ?? 0}
+            icon={Flame}
+            sublabel="Keep it going!"
+            href="/dashboard/progress"
+            accent
+          />
+        </div>
+      )}
+
+      {(pendingAssignments.length > 0 || needsRevision.length > 0) && (
+        <PanelCard
+          title="Assignments"
+          className="mt-6"
+          icon={<ClipboardList className="h-4 w-4 text-bao-light" />}
+        >
+          <ul className="space-y-3">
+            {needsRevision.map((a) => (
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-medium">{a.title}</span>
+                <div className="flex items-center gap-2">
+                  <StatusBadge status="needs_revision" />
+                  <Link href={`/dashboard/assignments/${a.id}`}>
+                    <Button size="sm" variant="outline">
+                      Revise
+                    </Button>
+                  </Link>
+                </div>
+              </li>
+            ))}
+            {pendingAssignments.slice(0, 3).map((a) => (
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-medium">{a.title}</span>
+                <Link href={`/dashboard/assignments/${a.id}`}>
+                  <Button size="sm">Submit work</Button>
+                </Link>
+              </li>
+            ))}
+          </ul>
           <Link
-            href={`/learn/${primaryCourse?.slug ?? "html-css-js"}/${continueSlug}`}
-            className="mt-6 inline-block"
+            href="/dashboard/assignments"
+            className="mt-4 inline-block text-sm text-bao-light hover:underline"
           >
-            <Button className="gap-2">
-              Continue
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+            View all assignments →
           </Link>
-        </Card>
+        </PanelCard>
+      )}
 
-        <Card className="flex flex-col items-center justify-center text-center">
-          <Flame className="h-10 w-10 text-bao" />
-          <p className="mt-3 text-3xl font-bold">{profile?.current_streak ?? 0}</p>
-          <p className="text-sm text-zinc-500">day streak</p>
-        </Card>
-      </div>
+      <div className="mt-6 grid gap-5 md:grid-cols-2">
+        <PanelCard
+          title="Active course"
+          description={course?.description ?? undefined}
+          icon={<BookOpen className="h-4 w-4 text-bao-light" />}
+        >
+          <h3 className="text-lg font-semibold text-[var(--foreground)]">
+            {course?.title ?? "No course yet"}
+          </h3>
+          {course ? (
+            <Link href={`/learn/${course.slug}`} className="mt-5 inline-block">
+              <Button variant="outline" size="sm">
+                View curriculum
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/dashboard/courses" className="mt-5 inline-block">
+              <Button variant="outline" size="sm">
+                Browse courses
+              </Button>
+            </Link>
+          )}
+        </PanelCard>
 
-      <div className="mt-10 grid gap-6 md:grid-cols-2">
-        <Card>
-          <div className="flex items-center gap-2 text-sm font-medium text-zinc-500">
-            <BookOpen className="h-4 w-4" />
-            Active course
-          </div>
-          <h3 className="mt-3 font-semibold">{primaryCourse?.title}</h3>
-          <p className="mt-2 text-sm text-zinc-500 line-clamp-2">
-            {primaryCourse?.description}
-          </p>
-          <Link href={`/learn/${primaryCourse?.slug}`} className="mt-4 inline-block">
-            <Button variant="outline" size="sm">
-              View curriculum
-            </Button>
-          </Link>
-        </Card>
-
-        <Card>
-          <div className="flex items-center gap-2 text-sm font-medium text-zinc-500">
-            <Megaphone className="h-4 w-4" />
-            Announcements
-          </div>
-          <ul className="mt-3 space-y-3">
-            {announcements?.length ? (
+        <PanelCard
+          title="Announcements"
+          icon={<Megaphone className="h-4 w-4 text-bao-light" />}
+        >
+          <ul className="space-y-4">
+            {announcements.length ? (
               announcements.map((a) => (
-                <li key={a.id}>
-                  <p className="font-medium text-sm">{a.title}</p>
-                  <p className="text-xs text-zinc-500 line-clamp-2">{a.body}</p>
+                <li
+                  key={a.id}
+                  className="border-b border-[var(--surface-border)] pb-4 last:border-0 last:pb-0"
+                >
+                  <p className="font-medium text-[var(--foreground)]">{a.title}</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-secondary">{a.body}</p>
                 </li>
               ))
             ) : (
-              <li className="text-sm text-zinc-400">No announcements yet.</li>
+              <li className="text-sm text-muted">No announcements yet.</li>
             )}
           </ul>
-        </Card>
+          <Link
+            href="/dashboard/announcements"
+            className="mt-4 inline-block text-sm text-bao-light hover:underline"
+          >
+            See all →
+          </Link>
+        </PanelCard>
       </div>
     </div>
   );

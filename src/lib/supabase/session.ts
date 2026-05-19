@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
+import { getHomePathForRole } from "@/lib/auth/roles";
+import { resolveRole } from "@/lib/auth/resolve-role";
 
 export async function updateSession(request: NextRequest) {
   const env = getSupabasePublicEnv();
@@ -44,6 +46,7 @@ export async function updateSession(request: NextRequest) {
     const isAuthPage = path === "/login";
     const isProtected =
       path.startsWith("/dashboard") ||
+      path.startsWith("/admin") ||
       path.startsWith("/learn") ||
       path.startsWith("/assignments");
 
@@ -56,7 +59,7 @@ export async function updateSession(request: NextRequest) {
 
     if (user && isAuthPage) {
       const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
+      url.pathname = getHomePathForRole(resolveRole(user));
       return NextResponse.redirect(url);
     }
   } catch (error) {

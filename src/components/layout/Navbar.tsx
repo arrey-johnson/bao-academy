@@ -9,8 +9,10 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Shield,
   X,
 } from "lucide-react";
+import { isAdminRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/brand/Logo";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -21,6 +23,8 @@ type NavbarProps = {
   user: { id: string; email?: string } | null;
   fullName: string | null;
   streak: number;
+  role?: string | null;
+  learnHref?: string;
 };
 
 const publicLinks = [
@@ -28,10 +32,12 @@ const publicLinks = [
   { href: "/learn/html-css-js", label: "Courses" },
 ];
 
-const authLinks = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/learn/html-css-js", label: "Learn", icon: BookOpen },
-];
+function getAuthLinks(learnHref: string) {
+  return [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: learnHref, label: "Learn", icon: BookOpen },
+  ];
+}
 
 function NavLink({
   href,
@@ -68,7 +74,13 @@ function NavLink({
   );
 }
 
-export function Navbar({ user, fullName, streak }: NavbarProps) {
+export function Navbar({
+  user,
+  fullName,
+  streak,
+  role,
+  learnHref = "/learn/html-css-js",
+}: NavbarProps) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
@@ -105,7 +117,15 @@ export function Navbar({ user, fullName, streak }: NavbarProps) {
     user?.email?.[0]?.toUpperCase() ||
     "?";
 
-  const links = user ? authLinks : publicLinks;
+  const studentLinks = getAuthLinks(learnHref);
+  const links = user
+    ? isAdminRole(role)
+      ? [
+          { href: "/admin", label: "Admin", icon: Shield },
+          ...studentLinks,
+        ]
+      : studentLinks
+    : publicLinks;
 
   return (
     <header className="sticky top-0 z-50">

@@ -67,26 +67,12 @@ export async function saveSlideProgress({
   const courseId = Array.isArray(modules) ? modules[0]?.course_id : modules?.course_id;
 
   if (courseId) {
-    const { data: moduleRows } = await supabase
-      .from("modules")
-      .select("id")
-      .eq("course_id", courseId);
-
-    const moduleIds = moduleRows?.map((m) => m.id) ?? [];
-    const { data: lessonRows } = await supabase
-      .from("lessons")
-      .select("id")
-      .in("module_id", moduleIds);
-
-    const lessonIds = lessonRows?.map((l) => l.id) ?? [];
-    const { count: totalSlides } = await supabase
-      .from("slides")
-      .select("id", { count: "exact", head: true })
-      .in("lesson_id", lessonIds);
-
-    const pct = Math.min(
-      100,
-      Math.round((completedSlideIds.length / Math.max(totalSlides ?? 1, 1)) * 100)
+    const { computeCourseProgressPercent } = await import("@/lib/student/progress");
+    const pct = await computeCourseProgressPercent(
+      supabase,
+      user.id,
+      courseId,
+      completedSlideIds
     );
 
     await supabase.from("enrollments").upsert(
@@ -101,7 +87,9 @@ export async function saveSlideProgress({
   }
 
   revalidatePath("/dashboard");
-  revalidatePath("/learn");
+  revalidatePath("/dashboard/progress");
+  revalidatePath("/dashboard/bookmarks");
+  revalidatePath("/learn", "layout");
   return { ok: true };
 }
 

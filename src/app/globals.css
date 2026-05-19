@@ -16,6 +16,20 @@
 html.dark {
   --background: #000000;
   --foreground: #f5f5f5;
+  --surface-page: #09090b;
+  --surface-card: #18181b;
+  --surface-card-hover: #27272a;
+  --surface-border: #3f3f46;
+  --surface-muted: #27272a;
+  --surface-inset: #0f0f12;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --progress-track: #3f3f46;
+  --accent-subtle: rgba(88, 38, 166, 0.14);
+  --accent-border: rgba(122, 61, 212, 0.35);
+  --table-header: #1f1f23;
+  --table-row-hover: rgba(255, 255, 255, 0.03);
+  --sidebar-bg: rgba(24, 24, 27, 0.85);
   --auth-page-bg: #09090b;
   --auth-card-bg: #18181b;
   --auth-card-border: #3f3f46;
@@ -33,7 +47,21 @@ html.dark {
 
 html.light {
   --background: #fafafa;
-  --foreground: #212121;
+  --foreground: #18181b;
+  --surface-page: #f4f4f5;
+  --surface-card: #ffffff;
+  --surface-card-hover: #fafafa;
+  --surface-border: #e4e4e7;
+  --surface-muted: #f4f4f5;
+  --surface-inset: #fafafa;
+  --text-secondary: #52525b;
+  --text-muted: #71717a;
+  --progress-track: #e4e4e7;
+  --accent-subtle: rgba(88, 38, 166, 0.08);
+  --accent-border: rgba(88, 38, 166, 0.22);
+  --table-header: #f4f4f5;
+  --table-row-hover: rgba(88, 38, 166, 0.04);
+  --sidebar-bg: rgba(255, 255, 255, 0.92);
   --auth-page-bg: #fafafa;
   --auth-card-bg: #ffffff;
   --auth-card-border: #e4e4e7;
@@ -138,4 +166,169 @@ html.light .auth-card {
   box-shadow:
     0 20px 40px -15px rgb(88 38 166 / 0.12),
     0 0 0 1px rgb(0 0 0 / 0.04);
+}
+
+/* App surfaces — dashboards, tables, panels */
+.surface-card {
+  border-radius: 1rem;
+  border: 1px solid var(--surface-border);
+  background-color: var(--surface-card);
+  color: var(--foreground);
+  box-shadow:
+    0 4px 24px -4px rgb(0 0 0 / 0.25),
+    0 0 0 1px rgb(255 255 255 / 0.03) inset;
+}
+
+html.light .surface-card {
+  box-shadow:
+    0 4px 20px -6px rgb(88 38 166 / 0.08),
+    0 0 0 1px rgb(0 0 0 / 0.04);
+}
+
+.surface-card-accent {
+  border-color: var(--accent-border);
+  background: linear-gradient(
+    135deg,
+    var(--accent-subtle) 0%,
+    var(--surface-card) 55%
+  );
+}
+
+.surface-panel {
+  border-radius: 1rem;
+  border: 1px solid var(--surface-border);
+  background-color: var(--surface-muted);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.progress-track {
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: var(--progress-track);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--bao-primary), var(--bao-primary-light));
+  transition: width 0.4s ease;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: var(--surface-muted);
+  color: var(--text-secondary);
+  border: 1px solid var(--surface-border);
+}
+
+.badge-accent {
+  background-color: var(--accent-subtle);
+  color: var(--bao-primary-light);
+  border-color: var(--accent-border);
+}
+
+html.light .badge-accent {
+  color: var(--bao-primary);
+}
+
+.dashboard-page {
+  position: relative;
+  min-height: 100%;
+}
+
+.dashboard-page::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 45% at 50% -5%,
+    rgba(88, 38, 166, 0.18),
+    transparent 65%
+  );
+}
+
+html.light .dashboard-page::before {
+  background: radial-gradient(
+    ellipse 70% 45% at 50% -5%,
+    rgba(88, 38, 166, 0.08),
+    transparent 65%
+  );
+}
+
+.admin-sidebar {
+  border-radius: 1rem;
+  border: 1px solid var(--surface-border);
+  background-color: var(--sidebar-bg);
+  backdrop-filter: blur(12px);
+  padding: 1.25rem;
+}
+
+.admin-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.admin-nav-link:hover {
+  background-color: var(--surface-card-hover);
+  color: var(--foreground);
+}
+
+.admin-nav-link-active {
+  background-color: var(--accent-subtle);
+  color: var(--bao-primary-light);
+  border: 1px solid var(--accent-border);
+}
+
+html.light .admin-nav-link-active {
+  color: var(--bao-primary);
+}
+
+.data-table thead {
+  background-color: var(--table-header);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.data-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.data-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--surface-border);
+  color: var(--foreground);
+}
+
+.data-table tbody tr:hover td {
+  background-color: var(--table-row-hover);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
 }

@@ -45,7 +45,8 @@ if (existing) {
   const { error } = await supabase.auth.admin.updateUserById(userId, {
     password,
     email_confirm: true,
-    user_metadata: { full_name: fullName },
+        user_metadata: { full_name: fullName, role: "admin" },
+        app_metadata: { role: "admin" },
   });
   if (error) throw error;
   console.log("Updated auth user:", userId);
@@ -54,7 +55,8 @@ if (existing) {
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name: fullName },
+        user_metadata: { full_name: fullName, role: "admin" },
+        app_metadata: { role: "admin" },
   });
   if (error) throw error;
   userId = data.user.id;
