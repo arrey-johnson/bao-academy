@@ -1,11 +1,9 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 
 export async function updateSession(request: NextRequest) {
   const env = getSupabasePublicEnv();
 
-  // Vercel (or local) without Supabase env — allow public pages; skip auth.
   if (!env) {
     return NextResponse.next({ request });
   }
@@ -13,6 +11,8 @@ export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   try {
+    const { createServerClient } = await import("@supabase/ssr");
+
     const supabase = createServerClient(env.url, env.anonKey, {
       cookies: {
         getAll() {
@@ -54,8 +54,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
   } catch (error) {
-    console.error("[middleware] Supabase session update failed:", error);
-    // Don't take down the site if auth refresh fails.
+    console.error("[proxy] Supabase session update failed:", error);
     return NextResponse.next({ request });
   }
 

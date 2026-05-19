@@ -43,7 +43,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 3. **Redeploy** after adding variables (Deployments → … → Redeploy).
 
-4. **Supabase Auth** → URL configuration: add your Vercel URL and `https://<your-app>.vercel.app/auth/callback` as redirect URLs.
+4. **Supabase Auth** → [URL configuration](https://supabase.com/dashboard/project/zogsfwrcpriugtetdtmd/auth/url-configuration):
+
+   - **Site URL:** `https://bao-academy.vercel.app`
+   - **Redirect URLs** (add both):
+     - `https://bao-academy.vercel.app/auth/callback`
+     - `https://bao-academy.vercel.app/**`
 
 5. Run `supabase/full-setup.sql` in the Supabase SQL Editor if the database is empty.
 
