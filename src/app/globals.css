@@ -6,8 +6,6 @@
 
 /* BAO Academy brand — colored logo purple #5826A6 */
 :root {
-  --background: #000000;
-  --foreground: #f5f5f5;
   --bao-primary: #5826a6;
   --bao-primary-hover: #6b31c4;
   --bao-primary-light: #7a3dd4;
@@ -15,9 +13,40 @@
   --bao-dark: #212121;
 }
 
+html.dark {
+  --background: #000000;
+  --foreground: #f5f5f5;
+  --auth-page-bg: #09090b;
+  --auth-card-bg: #18181b;
+  --auth-card-border: #3f3f46;
+  --auth-input-bg: #27272a;
+  --auth-input-border: #52525b;
+  --auth-input-text: #fafafa;
+  --auth-input-placeholder: #a1a1aa;
+  --auth-label: #e4e4e7;
+  --auth-muted: #a1a1aa;
+  --auth-info-bg: rgba(88, 38, 166, 0.15);
+  --auth-info-border: rgba(122, 61, 212, 0.35);
+  --auth-info-text: #d4d4d8;
+  color-scheme: dark;
+}
+
 html.light {
   --background: #fafafa;
   --foreground: #212121;
+  --auth-page-bg: #fafafa;
+  --auth-card-bg: #ffffff;
+  --auth-card-border: #e4e4e7;
+  --auth-input-bg: #ffffff;
+  --auth-input-border: #d4d4d8;
+  --auth-input-text: #18181b;
+  --auth-input-placeholder: #71717a;
+  --auth-label: #3f3f46;
+  --auth-muted: #71717a;
+  --auth-info-bg: rgba(88, 38, 166, 0.06);
+  --auth-info-border: rgba(88, 38, 166, 0.2);
+  --auth-info-text: #52525b;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -50,4 +79,63 @@ body {
 
 .auth-float {
   animation: auth-float 5s ease-in-out infinite;
+}
+
+/* Auth page — inputs readable in dark & light */
+.auth-input {
+  display: flex;
+  height: 3rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--auth-input-border);
+  background-color: var(--auth-input-bg);
+  color: var(--auth-input-text);
+  padding-right: 1rem;
+  padding-left: 2.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.auth-input::placeholder {
+  color: var(--auth-input-placeholder);
+  opacity: 1;
+}
+
+.auth-input:hover {
+  border-color: var(--bao-primary-light);
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: var(--bao-primary-light);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bao-primary) 35%, transparent);
+}
+
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--auth-input-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--auth-input-bg) inset;
+  box-shadow: 0 0 0 1000px var(--auth-input-bg) inset;
+  border-color: var(--bao-primary-light);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.auth-card {
+  border-radius: 1.5rem;
+  border: 1px solid var(--auth-card-border);
+  background-color: var(--auth-card-bg);
+  box-shadow:
+    0 25px 50px -12px rgb(0 0 0 / 0.35),
+    0 0 0 1px rgb(255 255 255 / 0.03) inset;
+}
+
+html.light .auth-card {
+  box-shadow:
+    0 20px 40px -15px rgb(88 38 166 / 0.12),
+    0 0 0 1px rgb(0 0 0 / 0.04);
 }

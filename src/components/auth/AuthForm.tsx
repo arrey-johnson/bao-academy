@@ -30,20 +30,18 @@ function AuthField({
     <div className="space-y-2">
       <label
         htmlFor={id}
-        className="block text-sm font-medium text-zinc-300 light:text-zinc-700"
+        className="block text-sm font-medium"
+        style={{ color: "var(--auth-label)" }}
       >
         {label}
       </label>
       <div className="relative">
-        <Icon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+        <Icon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--auth-muted)]" />
         {children}
       </div>
     </div>
   );
 }
-
-const inputClass =
-  "flex h-12 w-full rounded-xl border border-zinc-700/80 bg-zinc-900/80 pl-11 pr-4 text-sm text-zinc-50 shadow-inner shadow-black/20 placeholder:text-zinc-500 transition-all focus:border-bao/60 focus:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-bao/30 light:border-zinc-200 light:bg-white light:text-zinc-900 light:shadow-none light:focus:border-bao light:focus:ring-bao/20";
 
 export function AuthForm() {
   const router = useRouter();
@@ -89,25 +87,37 @@ export function AuthForm() {
 
   return (
     <div className="w-full">
-      <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl light:border-zinc-200/80 light:bg-white/90 light:shadow-xl light:shadow-bao/5">
+      <div className="auth-card p-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold tracking-tight text-zinc-50 light:text-zinc-900">
+          <h2
+            className="text-2xl font-bold tracking-tight"
+            style={{ color: "var(--foreground)" }}
+          >
             Student sign in
           </h2>
-          <p className="mt-1.5 text-sm text-zinc-400 light:text-zinc-500">
+          <p className="mt-1.5 text-sm" style={{ color: "var(--auth-muted)" }}>
             Use the email and password provided when you were enrolled.
           </p>
         </div>
 
-        <div className="mb-6 flex items-start gap-2.5 rounded-xl border border-bao/25 bg-bao/10 px-4 py-3 text-sm text-zinc-300 light:border-bao/20 light:bg-bao/5 light:text-zinc-600">
+        <div
+          className="mb-6 flex items-start gap-2.5 rounded-xl px-4 py-3 text-sm"
+          style={{
+            backgroundColor: "var(--auth-info-bg)",
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: "var(--auth-info-border)",
+            color: "var(--auth-info-text)",
+          }}
+        >
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-bao-light" />
           <p>
             Accounts are created by BAO Academy staff only.{" "}
-            <span className="text-zinc-400 light:text-zinc-500">
+            <span style={{ color: "var(--auth-muted)" }}>
               Need access? Contact{" "}
               <a
                 href="mailto:contact@baotechnologies.com"
-                className="font-medium text-bao-light hover:underline light:text-bao"
+                className="font-medium text-bao-light hover:underline"
               >
                 contact@baotechnologies.com
               </a>
@@ -126,7 +136,7 @@ export function AuthForm() {
               placeholder="you@example.com"
               required
               autoComplete="email"
-              className={inputClass}
+              className="auth-input"
             />
           </AuthField>
 
@@ -139,12 +149,12 @@ export function AuthForm() {
               placeholder="Your password"
               required
               autoComplete="current-password"
-              className={cn(inputClass, "pr-12")}
+              className={cn("auth-input", "pr-12")}
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-zinc-500 transition-colors hover:text-zinc-300 light:hover:text-zinc-700"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[var(--auth-muted)] transition-colors hover:opacity-80"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
@@ -158,7 +168,7 @@ export function AuthForm() {
           {error && (
             <div
               role="alert"
-              className="flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 light:border-red-200 light:bg-red-50 light:text-red-700"
+              className="flex items-start gap-2.5 rounded-xl border border-red-500/40 bg-red-500/15 px-4 py-3 text-sm text-red-200 light:border-red-200 light:bg-red-50 light:text-red-700"
             >
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{error}</span>

@@ -26,9 +26,11 @@ export function AuthLayout({ children }: AuthLayoutProps) {
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center py-6 md:py-10 lg:flex-row lg:items-stretch lg:gap-12 lg:py-16">
       <div
         className={cn(
-          "relative mb-8 w-full overflow-hidden rounded-3xl border border-white/10 p-8 md:p-10",
-          "bg-gradient-to-br from-bao/30 via-zinc-900/90 to-zinc-950",
-          "light:border-bao/20 light:from-bao/15 light:via-white light:to-zinc-100",
+          "relative mb-8 w-full overflow-hidden rounded-3xl border p-8 md:p-10",
+          "border-[var(--auth-card-border)]",
+          "bg-gradient-to-br from-bao/25 via-[var(--auth-card-bg)] to-[var(--auth-page-bg)]",
+          "dark:from-bao/30 dark:via-zinc-900/95 dark:to-zinc-950",
+          "light:from-bao/10 light:via-white light:to-zinc-50",
           "lg:mb-0 lg:flex lg:max-w-md lg:flex-col lg:justify-between"
         )}
       >
