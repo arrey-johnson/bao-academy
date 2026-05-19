@@ -1,8 +1,13 @@
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { getSupabasePublicEnv } from "@/lib/supabase/env";
+
+export const dynamic = "force-dynamic";
 
 export default function LoginPage() {
+  const supabaseEnv = getSupabasePublicEnv();
+
   return (
     <AuthLayout>
       <Suspense
@@ -12,7 +17,7 @@ export default function LoginPage() {
           </div>
         }
       >
-        <AuthForm />
+        <AuthForm supabaseEnv={supabaseEnv} />
       </Suspense>
     </AuthLayout>
   );

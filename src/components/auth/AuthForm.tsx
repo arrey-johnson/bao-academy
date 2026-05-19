@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Eye,
   EyeOff,
@@ -12,6 +12,7 @@ import {
   Info,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import type { SupabasePublicEnv } from "@/lib/supabase/env";
 import { getHomePathForRole } from "@/lib/auth/roles";
 import { resolveRole } from "@/lib/auth/resolve-role";
 import { Button } from "@/components/ui/button";
@@ -104,8 +105,25 @@ function PasswordField({
   );
 }
 
-export function AuthForm() {
-  const router = useRouter();
+function authErrorMessage(err: unknown): string {
+  if (err instanceof Error) {
+    if (err.message.includes("Supabase is not configured")) {
+      return "This site is missing Supabase settings. In Vercel → Settings → Environment Variables, add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then redeploy.";
+    }
+    if (/failed to fetch|networkerror|load failed/i.test(err.message)) {
+      return "Could not reach Supabase. Check the project URL in Vercel env vars and that your Supabase project is not paused.";
+    }
+    return err.message;
+  }
+  return "Something went wrong. Check your connection and try again.";
+}
+
+type AuthFormProps = {
+  /** Passed from the server so production uses runtime env, not a stale client bundle. */
+  supabaseEnv: SupabasePublicEnv | null;
+};
+
+export function AuthForm({ supabaseEnv }: AuthFormProps) {
   const searchParams = useSearchParams();
   const redirectParam = searchParams.get("redirect");
   const authError = searchParams.get("error");
@@ -122,13 +140,37 @@ export function AuthForm() {
     }
   }, [authError]);
 
+  if (!supabaseEnv) {
+    return (
+      <div className="w-full">
+        <div className="auth-card p-8">
+          <div
+            role="alert"
+            className="flex items-start gap-2.5 rounded-xl border border-amber-500/40 bg-amber-500/15 px-4 py-3 text-sm text-amber-100 light:text-amber-900"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-medium">Sign-in unavailable on this deployment</p>
+              <p className="mt-2 text-amber-200/90 light:text-amber-800">
+                Add <code className="rounded bg-black/20 px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+                <code className="rounded bg-black/20 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in
+                Vercel → Project Settings → Environment Variables (Production), then{" "}
+                <strong>Redeploy</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      const supabase = createClient();
+      const supabase = createClient(supabaseEnv);
       const { data: signInData, error: signInError } =
         await supabase.auth.signInWithPassword({ email, password });
 
@@ -137,13 +179,20 @@ export function AuthForm() {
         return;
       }
 
-      const { data: profile } = signInData.user
-        ? await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", signInData.user.id)
-            .maybeSingle()
-        : { data: null };
+      if (!signInData.user) {
+        setError("Sign-in succeeded but no user session was returned.");
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", signInData.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.warn("[auth] profile lookup:", profileError.message);
+      }
 
       const role = resolveRole(signInData.user, profile?.role);
       const roleHome = getHomePathForRole(role);
@@ -155,10 +204,12 @@ export function AuthForm() {
             ? roleHome
             : redirectParam;
 
-      router.push(destination);
-      router.refresh();
-    } catch {
-      setError("Something went wrong. Check your connection and try again.");
+      // Ensure session cookies are written before navigation (fixes production redirects).
+      await supabase.auth.getSession();
+      window.location.assign(destination);
+    } catch (err) {
+      console.error("[auth] sign-in failed:", err);
+      setError(authErrorMessage(err));
     } finally {
       setLoading(false);
     }

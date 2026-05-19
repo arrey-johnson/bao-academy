@@ -1,7 +1,7 @@
+export type SupabasePublicEnv = { url: string; anonKey: string };
+
 /** Public Supabase env vars (safe for browser + edge). */
-export function getSupabasePublicEnv():
-  | { url: string; anonKey: string }
-  | null {
+export function getSupabasePublicEnv(): SupabasePublicEnv | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
