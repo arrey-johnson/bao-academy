@@ -6,6 +6,8 @@ import { getLessonWithSlides } from "@/lib/data/courses";
 import { SlidePlayer } from "@/components/slides/SlidePlayer";
 import type { Slide, SlideContent } from "@/types/slides";
 
+export const dynamic = "force-dynamic";
+
 export default async function LessonPage({
   params,
 }: {

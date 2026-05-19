@@ -4,6 +4,8 @@ import { CheckCircle2 } from "lucide-react";
 import { getCourseLessons } from "@/lib/data/courses";
 import { Card } from "@/components/ui/card";
 
+export const dynamic = "force-dynamic";
+
 export default async function CoursePage({
   params,
 }: {
