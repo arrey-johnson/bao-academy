@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getAdminStudentsPageData } from "@/lib/admin/students";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { PanelCard } from "@/components/dashboard/PanelCard";
 import { DataTable } from "@/components/dashboard/DataTable";
@@ -8,25 +8,8 @@ import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
-type StudentRow = {
-  id: string;
-  email: string | null;
-  full_name: string | null;
-  role: string;
-  current_streak: number | null;
-};
-
 export default async function AdminStudentsPage() {
-  const supabase = await createClient();
-  const [{ data: students }, { data: courses }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, email, full_name, role, current_streak, created_at")
-      .order("created_at", { ascending: false }),
-    supabase.from("courses").select("id, title").order("title"),
-  ]);
-
-  const rows = (students ?? []) as StudentRow[];
+  const { students, courses } = await getAdminStudentsPageData();
 
   return (
     <div>
@@ -40,12 +23,12 @@ export default async function AdminStudentsPage() {
         description="Creates their login credentials — they sign in at /login."
         className="mb-6"
       >
-        <EnrollStudentForm courses={courses ?? []} />
+        <EnrollStudentForm courses={courses} />
       </PanelCard>
 
       <PanelCard title="All accounts" noPadding>
         <DataTable
-          data={rows}
+          data={students}
           getRowKey={(s) => s.id}
           emptyMessage="No profiles yet. Enroll a student above or run supabase/full-setup.sql."
           columns={[

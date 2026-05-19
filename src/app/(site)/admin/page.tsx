@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Users, BookOpen, Megaphone, GraduationCap, ClipboardList } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getAdminOverviewStats } from "@/lib/admin/overview";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { PanelCard } from "@/components/dashboard/PanelCard";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -9,63 +9,49 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
-  const supabase = await createClient();
-
-  const [
-    { count: studentCount },
-    { count: courseCount },
-    { count: announcementCount },
-    { count: enrollmentCount },
-    { count: submissionCount },
-  ] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("role", "student"),
-    supabase.from("courses").select("*", { count: "exact", head: true }),
-    supabase.from("announcements").select("*", { count: "exact", head: true }),
-    supabase.from("enrollments").select("*", { count: "exact", head: true }),
-    supabase
-      .from("submissions")
-      .select("*", { count: "exact", head: true })
-      .neq("status", "draft"),
-  ]);
+  const {
+    studentCount,
+    courseCount,
+    announcementCount,
+    enrollmentCount,
+    submissionCount,
+  } = await getAdminOverviewStats();
 
   const stats = [
     {
       label: "Students",
-      value: studentCount ?? 0,
+      value: studentCount,
       icon: Users,
       href: "/admin/students",
     },
     {
       label: "Courses",
-      value: courseCount ?? 0,
+      value: courseCount,
       icon: BookOpen,
       href: "/admin/courses",
     },
     {
       label: "Enrollments",
-      value: enrollmentCount ?? 0,
+      value: enrollmentCount,
       icon: GraduationCap,
       href: "/admin/enrollments",
     },
     {
       label: "Announcements",
-      value: announcementCount ?? 0,
+      value: announcementCount,
       icon: Megaphone,
       href: "/admin/announcements",
     },
     {
       label: "Submissions",
-      value: submissionCount ?? 0,
+      value: submissionCount,
       icon: ClipboardList,
       href: "/admin/submissions",
     },
   ];
 
   return (
-  <div>
+    <div>
       <DashboardHeader
         eyebrow="Academy control"
         title="Admin dashboard"

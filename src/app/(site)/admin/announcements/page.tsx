@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getAdminAnnouncementsPageData } from "@/lib/admin/announcements";
 import { AnnouncementForm } from "@/components/admin/AnnouncementForm";
 import { AnnouncementList } from "@/components/admin/AnnouncementList";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -7,11 +7,7 @@ import { PanelCard } from "@/components/dashboard/PanelCard";
 export const dynamic = "force-dynamic";
 
 export default async function AdminAnnouncementsPage() {
-  const supabase = await createClient();
-  const [{ data: announcements }, { data: courses }] = await Promise.all([
-    supabase.from("announcements").select("*").order("published_at", { ascending: false }),
-    supabase.from("courses").select("id, title").order("title"),
-  ]);
+  const { announcements, courses } = await getAdminAnnouncementsPageData();
 
   return (
     <div>
@@ -21,10 +17,10 @@ export default async function AdminAnnouncementsPage() {
       />
 
       <PanelCard title="New announcement" className="mb-6">
-        <AnnouncementForm courses={courses ?? []} />
+        <AnnouncementForm courses={courses} />
       </PanelCard>
 
-      <AnnouncementList announcements={announcements ?? []} courses={courses ?? []} />
+      <AnnouncementList announcements={announcements} courses={courses} />
     </div>
   );
 }

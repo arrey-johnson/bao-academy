@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getAdminServiceClient } from "@/lib/admin/db";
 
 export type AdminCourseRow = {
   id: string;
@@ -14,57 +14,57 @@ export type AdminCourseRow = {
 };
 
 export async function getAdminCoursesList(): Promise<AdminCourseRow[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const service = await getAdminServiceClient();
+
+  const { data: courses, error } = await service
     .from("courses")
-    .select(
-      `
-      id,
-      title,
-      slug,
-      description,
-      track,
-      published,
-      sort_order,
-      created_at,
-      modules(count),
-      enrollments(count)
-    `
-    )
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
+    .select("id, title, slug, description, track, published, sort_order, created_at")
+    .order("sort_order", { ascending: true });
 
   if (error) {
     console.error("[admin/courses] list:", error.message);
     return [];
   }
 
-  return (data ?? []).map((row) => {
-    const modules = row.modules as { count: number }[] | { count: number } | null;
-    const enrollments = row.enrollments as { count: number }[] | { count: number } | null;
-    const moduleCount = Array.isArray(modules) ? (modules[0]?.count ?? 0) : (modules?.count ?? 0);
-    const enrollmentCount = Array.isArray(enrollments)
-      ? (enrollments[0]?.count ?? 0)
-      : (enrollments?.count ?? 0);
+  if (!courses?.length) return [];
 
-    return {
-      id: row.id,
-      title: row.title,
-      slug: row.slug,
-      description: row.description,
-      track: row.track,
-      published: row.published,
-      sort_order: row.sort_order,
-      created_at: row.created_at,
-      moduleCount,
-      enrollmentCount,
-    };
-  });
+  const courseIds = courses.map((c) => c.id);
+
+  const [{ data: modules }, { data: enrollments }] = await Promise.all([
+    service.from("modules").select("id, course_id").in("course_id", courseIds),
+    service.from("enrollments").select("id, course_id").in("course_id", courseIds),
+  ]);
+
+  const moduleCountByCourse = new Map<string, number>();
+  for (const m of modules ?? []) {
+    moduleCountByCourse.set(m.course_id, (moduleCountByCourse.get(m.course_id) ?? 0) + 1);
+  }
+
+  const enrollmentCountByCourse = new Map<string, number>();
+  for (const e of enrollments ?? []) {
+    enrollmentCountByCourse.set(
+      e.course_id,
+      (enrollmentCountByCourse.get(e.course_id) ?? 0) + 1
+    );
+  }
+
+  return courses.map((c) => ({
+    id: c.id,
+    title: c.title,
+    slug: c.slug,
+    description: c.description,
+    track: c.track,
+    published: c.published,
+    sort_order: c.sort_order,
+    created_at: c.created_at,
+    moduleCount: moduleCountByCourse.get(c.id) ?? 0,
+    enrollmentCount: enrollmentCountByCourse.get(c.id) ?? 0,
+  }));
 }
 
 export async function getAdminCourseById(courseId: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase.from("courses").select("*").eq("id", courseId).maybeSingle();
+  const service = await getAdminServiceClient();
+  const { data, error } = await service.from("courses").select("*").eq("id", courseId).maybeSingle();
   if (error || !data) return null;
   return data;
 }

@@ -1,5 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
 import { removeEnrollment } from "@/app/actions/admin";
+import {
+  getAdminEnrollmentsList,
+  getEnrollmentFormOptions,
+} from "@/lib/admin/enrollments";
 import { AssignEnrollmentForm } from "@/components/admin/AssignEnrollmentForm";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -8,34 +11,11 @@ import { PanelCard } from "@/components/dashboard/PanelCard";
 
 export const dynamic = "force-dynamic";
 
-type EnrollmentRow = {
-  id: string;
-  progress_percent: number;
-  enrolled_at: string;
-  profiles: { full_name: string | null; email: string | null } | null;
-  courses: { title: string; slug: string } | null;
-};
-
 export default async function AdminEnrollmentsPage() {
-  const supabase = await createClient();
-
-  const [{ data: enrollments }, { data: students }, { data: courses }] =
-    await Promise.all([
-      supabase
-        .from("enrollments")
-        .select(
-          "id, progress_percent, enrolled_at, profiles(full_name, email), courses(title, slug)"
-        )
-        .order("enrolled_at", { ascending: false }),
-      supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .eq("role", "student")
-        .order("full_name"),
-      supabase.from("courses").select("id, title").order("title"),
-    ]);
-
-  const rows = (enrollments ?? []) as unknown as EnrollmentRow[];
+  const [rows, { students, courses }] = await Promise.all([
+    getAdminEnrollmentsList(),
+    getEnrollmentFormOptions(),
+  ]);
 
   return (
     <div>
@@ -45,21 +25,21 @@ export default async function AdminEnrollmentsPage() {
       />
 
       <PanelCard title="Assign enrollment" className="mb-6">
-        <AssignEnrollmentForm students={students ?? []} courses={courses ?? []} />
+        <AssignEnrollmentForm students={students} courses={courses} />
       </PanelCard>
 
       <PanelCard title="All enrollments" noPadding>
         <DataTable
           data={rows}
           getRowKey={(e) => e.id}
-          emptyMessage="No enrollments yet."
+          emptyMessage="No enrollments yet. Assign a student to a course above."
           columns={[
             {
               key: "student",
               header: "Student",
               cell: (e) => (
                 <span className="font-medium">
-                  {e.profiles?.full_name ?? e.profiles?.email ?? "—"}
+                  {e.studentName ?? e.studentEmail ?? "—"}
                 </span>
               ),
             },
@@ -67,13 +47,13 @@ export default async function AdminEnrollmentsPage() {
               key: "email",
               header: "Email",
               cell: (e) => (
-                <span className="text-secondary">{e.profiles?.email ?? "—"}</span>
+                <span className="text-secondary">{e.studentEmail ?? "—"}</span>
               ),
             },
             {
               key: "course",
               header: "Course",
-              cell: (e) => e.courses?.title ?? "—",
+              cell: (e) => e.courseTitle ?? "—",
             },
             {
               key: "progress",
