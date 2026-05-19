@@ -12,15 +12,18 @@ function fail<T = void>(e: unknown): ActionResult<T> {
   };
 }
 
-function revalidateAdmin() {
+function revalidateAdmin(courseId?: string) {
   revalidatePath("/admin");
   revalidatePath("/admin/students");
-  revalidatePath("/admin/courses");
+  revalidatePath("/admin/courses", "layout");
   revalidatePath("/admin/enrollments");
   revalidatePath("/admin/announcements");
   revalidatePath("/admin/submissions");
   revalidatePath("/dashboard");
   revalidatePath("/learn", "layout");
+  if (courseId) {
+    revalidatePath(`/admin/courses/${courseId}`);
+  }
 }
 
 // ——— Students ———
@@ -86,7 +89,7 @@ export async function enrollStudent(formData: FormData): Promise<ActionResult<{ 
 
 export async function updateStudent(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, service } = await getAdminContext();
+    const { service } = await getAdminContext();
     const userId = String(formData.get("userId") ?? "");
     const fullName = String(formData.get("fullName") ?? "").trim();
     const role = String(formData.get("role") ?? "student");
@@ -97,7 +100,7 @@ export async function updateStudent(formData: FormData): Promise<ActionResult> {
       return { ok: false, error: "Invalid role." };
     }
 
-    const { error } = await supabase
+    const { error } = await service
       .from("profiles")
       .update({ full_name: fullName, role, email, updated_at: new Date().toISOString() })
       .eq("id", userId);
@@ -147,12 +150,12 @@ export async function deleteStudent(userId: string): Promise<ActionResult> {
 
 export async function assignEnrollment(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await getAdminContext();
+    const { service } = await getAdminContext();
     const userId = String(formData.get("userId") ?? "");
     const courseId = String(formData.get("courseId") ?? "");
     if (!userId || !courseId) return { ok: false, error: "Student and course required." };
 
-    const { error } = await supabase.from("enrollments").upsert(
+    const { error } = await service.from("enrollments").upsert(
       { user_id: userId, course_id: courseId, progress_percent: 0 },
       { onConflict: "user_id,course_id" }
     );
@@ -166,8 +169,8 @@ export async function assignEnrollment(formData: FormData): Promise<ActionResult
 
 export async function removeEnrollment(enrollmentId: string): Promise<ActionResult> {
   try {
-    const { supabase } = await getAdminContext();
-    const { error } = await supabase.from("enrollments").delete().eq("id", enrollmentId);
+    const { service } = await getAdminContext();
+    const { error } = await service.from("enrollments").delete().eq("id", enrollmentId);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
     return { ok: true };
@@ -283,8 +286,8 @@ export async function toggleCoursePublished(courseId: string, published: boolean
 
 export async function deleteModule(moduleId: string): Promise<ActionResult> {
   try {
-    const { supabase } = await getAdminContext();
-    const { error } = await supabase.from("modules").delete().eq("id", moduleId);
+    const { service } = await getAdminContext();
+    const { error } = await service.from("modules").delete().eq("id", moduleId);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
     return { ok: true };
@@ -295,12 +298,12 @@ export async function deleteModule(moduleId: string): Promise<ActionResult> {
 
 export async function createModule(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { supabase } = await getAdminContext();
+    const { service } = await getAdminContext();
     const courseId = String(formData.get("courseId") ?? "");
     const title = String(formData.get("title") ?? "").trim();
     const slug = String(formData.get("slug") ?? "").trim() || slugify(title);
 
-    const { data, error } = await supabase
+    const { data, error } = await service
       .from("modules")
       .insert({ course_id: courseId, title, slug, sort_order: Number(formData.get("sortOrder") ?? 0) })
       .select("id")
@@ -315,13 +318,13 @@ export async function createModule(formData: FormData): Promise<ActionResult<{ i
 
 export async function createLesson(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { supabase } = await getAdminContext();
+    const { service } = await getAdminContext();
     const moduleId = String(formData.get("moduleId") ?? "");
     const title = String(formData.get("title") ?? "").trim();
     const slug = String(formData.get("slug") ?? "").trim() || slugify(title);
     const description = String(formData.get("description") ?? "").trim();
 
-    const { data, error } = await supabase
+    const { data, error } = await service
       .from("lessons")
       .insert({
         module_id: moduleId,
@@ -343,9 +346,9 @@ export async function createLesson(formData: FormData): Promise<ActionResult<{ i
 
 export async function updateLesson(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await getAdminContext();
+    const { service } = await getAdminContext();
     const id = String(formData.get("id") ?? "");
-    const { error } = await supabase
+    const { error } = await service
       .from("lessons")
       .update({
         title: String(formData.get("title") ?? "").trim(),
@@ -365,8 +368,8 @@ export async function updateLesson(formData: FormData): Promise<ActionResult> {
 
 export async function deleteLesson(lessonId: string): Promise<ActionResult> {
   try {
-    const { supabase } = await getAdminContext();
-    const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
+    const { service } = await getAdminContext();
+    const { error } = await service.from("lessons").delete().eq("id", lessonId);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
     return { ok: true };
@@ -379,7 +382,7 @@ export async function deleteLesson(lessonId: string): Promise<ActionResult> {
 
 export async function saveSlide(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { supabase } = await getAdminContext();
+    const { service } = await getAdminContext();
     const id = String(formData.get("id") ?? "").trim();
     const lessonId = String(formData.get("lessonId") ?? "");
     const title = String(formData.get("title") ?? "").trim() || null;
@@ -395,7 +398,7 @@ export async function saveSlide(formData: FormData): Promise<ActionResult<{ id: 
     }
 
     if (id) {
-      const { error } = await supabase
+      const { error } = await service
         .from("slides")
         .update({ title, slide_type: slideType, sort_order: sortOrder, content })
         .eq("id", id);
@@ -404,7 +407,7 @@ export async function saveSlide(formData: FormData): Promise<ActionResult<{ id: 
       return { ok: true, data: { id } };
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await service
       .from("slides")
       .insert({ lesson_id: lessonId, title, slide_type: slideType, sort_order: sortOrder, content })
       .select("id")
@@ -419,8 +422,8 @@ export async function saveSlide(formData: FormData): Promise<ActionResult<{ id: 
 
 export async function deleteSlide(slideId: string): Promise<ActionResult> {
   try {
-    const { supabase } = await getAdminContext();
-    const { error } = await supabase.from("slides").delete().eq("id", slideId);
+    const { service } = await getAdminContext();
+    const { error } = await service.from("slides").delete().eq("id", slideId);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
     return { ok: true };
@@ -433,7 +436,7 @@ export async function deleteSlide(slideId: string): Promise<ActionResult> {
 
 export async function saveAnnouncement(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { supabase } = await getAdminContext();
+    const { service } = await getAdminContext();
     const id = String(formData.get("id") ?? "").trim();
     const title = String(formData.get("title") ?? "").trim();
     const body = String(formData.get("body") ?? "").trim();
@@ -442,7 +445,7 @@ export async function saveAnnouncement(formData: FormData): Promise<ActionResult
     if (!title || !body) return { ok: false, error: "Title and body required." };
 
     if (id) {
-      const { error } = await supabase
+      const { error } = await service
         .from("announcements")
         .update({ title, body, course_id: courseId })
         .eq("id", id);
@@ -451,7 +454,7 @@ export async function saveAnnouncement(formData: FormData): Promise<ActionResult
       return { ok: true, data: { id } };
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await service
       .from("announcements")
       .insert({ title, body, course_id: courseId })
       .select("id")
@@ -466,8 +469,8 @@ export async function saveAnnouncement(formData: FormData): Promise<ActionResult
 
 export async function deleteAnnouncement(id: string): Promise<ActionResult> {
   try {
-    const { supabase } = await getAdminContext();
-    const { error } = await supabase.from("announcements").delete().eq("id", id);
+    const { service } = await getAdminContext();
+    const { error } = await service.from("announcements").delete().eq("id", id);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
     return { ok: true };
@@ -483,11 +486,11 @@ export async function updateSubmissionStatus(
   status: string
 ): Promise<ActionResult> {
   try {
-    const { supabase } = await getAdminContext();
+    const { service } = await getAdminContext();
     const allowed = ["draft", "submitted", "in_review", "needs_revision", "approved"];
     if (!allowed.includes(status)) return { ok: false, error: "Invalid status." };
 
-    const { error } = await supabase
+    const { error } = await service
       .from("submissions")
       .update({ status, updated_at: new Date().toISOString() })
       .eq("id", submissionId);
@@ -501,19 +504,19 @@ export async function updateSubmissionStatus(
 
 export async function reviewSubmission(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, user } = await getAdminContext();
+    const { service, user } = await getAdminContext();
     const submissionId = String(formData.get("submissionId") ?? "");
     const comments = String(formData.get("comments") ?? "").trim();
     const approved = formData.get("approved") === "on";
     const status = approved ? "approved" : "needs_revision";
 
-    const { error: subErr } = await supabase
+    const { error: subErr } = await service
       .from("submissions")
       .update({ status, updated_at: new Date().toISOString() })
       .eq("id", submissionId);
     if (subErr) return { ok: false, error: subErr.message };
 
-    const { error: revErr } = await supabase.from("reviews").insert({
+    const { error: revErr } = await service.from("reviews").insert({
       submission_id: submissionId,
       mentor_id: user.id,
       comments,

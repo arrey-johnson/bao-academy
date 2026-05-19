@@ -76,7 +76,7 @@ export default async function AdminStudentDetailPage({ params }: Props) {
                 <DeleteButton
                   label="Remove"
                   confirmMessage="Remove this enrollment?"
-                  onDelete={() => removeEnrollment(e.id)}
+                  onDelete={removeEnrollment.bind(null, e.id)}
                 />
               ),
             },
@@ -91,7 +91,7 @@ export default async function AdminStudentDetailPage({ params }: Props) {
         <DeleteButton
           label="Delete student"
           confirmMessage="Delete this student permanently?"
-          onDelete={() => deleteStudent(id)}
+          onDelete={deleteStudent.bind(null, id)}
           redirectTo="/admin/students"
         />
       </PanelCard>

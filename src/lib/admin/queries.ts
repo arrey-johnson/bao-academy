@@ -29,11 +29,16 @@ export async function getCourseWithCurriculum(courseId: string) {
 
   if (courseError || !course) return null;
 
-  const { data: modules } = await service
+  const { data: modules, error: modulesError } = await service
     .from("modules")
     .select("id, title, slug, sort_order")
     .eq("course_id", courseId)
     .order("sort_order");
+
+  if (modulesError) {
+    console.error("[admin/courses] modules:", modulesError.message);
+    return { course, modules: [] };
+  }
 
   const moduleIds = (modules ?? []).map((m) => m.id);
   let lessonsByModule = new Map<string, Array<{
@@ -45,11 +50,15 @@ export async function getCourseWithCurriculum(courseId: string) {
   }>>();
 
   if (moduleIds.length) {
-    const { data: lessons } = await service
+    const { data: lessons, error: lessonsError } = await service
       .from("lessons")
       .select("id, module_id, title, slug, sort_order, estimated_minutes")
       .in("module_id", moduleIds)
       .order("sort_order");
+
+    if (lessonsError) {
+      console.error("[admin/courses] lessons:", lessonsError.message);
+    }
 
     for (const lesson of lessons ?? []) {
       const list = lessonsByModule.get(lesson.module_id) ?? [];

@@ -116,7 +116,7 @@ export default async function AdminCourseDetailPage({ params }: Props) {
         <DeleteButton
           label="Delete course"
           confirmMessage={`Delete "${course.title}" and all its content?`}
-          onDelete={() => deleteCourse(course.id)}
+          onDelete={deleteCourse.bind(null, course.id)}
           redirectTo="/admin/courses"
         />
       </PanelCard>

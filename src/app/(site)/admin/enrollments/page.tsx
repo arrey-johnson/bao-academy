@@ -75,7 +75,7 @@ export default async function AdminEnrollmentsPage() {
                 <DeleteButton
                   label="Remove"
                   confirmMessage="Remove this enrollment?"
-                  onDelete={() => removeEnrollment(e.id)}
+                  onDelete={removeEnrollment.bind(null, e.id)}
                 />
               ),
             },

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 type DeleteButtonProps = {
   label?: string;
   confirmMessage: string;
+  /** Pass a server action with `.bind(null, id)` from Server Components — not `() => action(id)`. */
   onDelete: () => Promise<{ ok: boolean; error?: string }>;
   redirectTo?: string;
 };
