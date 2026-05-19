@@ -31,6 +31,20 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Import this repo on [Vercel](https://vercel.com/new).
+2. **Environment variables** (Project → Settings → Environment Variables). Required for auth and middleware:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   | Name | Value |
+   |------|--------|
+   | `NEXT_PUBLIC_SUPABASE_URL` | `https://zogsfwrcpriugtetdtmd.supabase.co` (your project URL) |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API → `anon` `public` |
+
+   Optional: `SUPABASE_SERVICE_ROLE_KEY` (server scripts only; never expose to the client).
+
+3. **Redeploy** after adding variables (Deployments → … → Redeploy).
+
+4. **Supabase Auth** → URL configuration: add your Vercel URL and `https://<your-app>.vercel.app/auth/callback` as redirect URLs.
+
+5. Run `supabase/full-setup.sql` in the Supabase SQL Editor if the database is empty.
+
+If you see `MIDDLEWARE_INVOCATION_FAILED`, Supabase env vars are usually missing or wrong on Vercel.
