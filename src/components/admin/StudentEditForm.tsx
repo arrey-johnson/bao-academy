@@ -30,7 +30,8 @@ export function StudentEditForm({ student }: { student: Student }) {
     setLoading(true);
     setProfileError(null);
     setProfileSuccess(null);
-    const result = await updateStudent(new FormData(e.currentTarget));
+    const form = e.currentTarget;
+    const result = await updateStudent(new FormData(form));
     if (result.ok) {
       setProfileSuccess("Profile updated.");
       router.refresh();
@@ -44,7 +45,8 @@ export function StudentEditForm({ student }: { student: Student }) {
     e.preventDefault();
     setPwError(null);
     setPwSuccess(null);
-    const result = await resetStudentPassword(new FormData(e.currentTarget));
+    const form = e.currentTarget;
+    const result = await resetStudentPassword(new FormData(form));
     if (result.ok) setPwSuccess("Password updated.");
     else setPwError(result.error);
   }

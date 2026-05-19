@@ -29,7 +29,8 @@ export function ProfileForm({
     setLoading(true);
     setNameError(null);
     setNameSuccess(null);
-    const result = await updateStudentProfile(new FormData(e.currentTarget));
+    const form = e.currentTarget;
+    const result = await updateStudentProfile(new FormData(form));
     if (result.ok) {
       setNameSuccess("Profile updated.");
       router.refresh();
@@ -39,9 +40,10 @@ export function ProfileForm({
 
   async function changePassword(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setPwError(null);
     setPwSuccess(null);
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(form);
     const password = String(fd.get("password") ?? "");
     if (password.length < 6) {
       setPwError("Password must be at least 6 characters.");
@@ -52,7 +54,7 @@ export function ProfileForm({
     if (error) setPwError(error.message);
     else {
       setPwSuccess("Password updated.");
-      e.currentTarget.reset();
+      form.reset();
     }
   }
 

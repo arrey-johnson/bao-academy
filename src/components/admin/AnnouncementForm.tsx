@@ -34,13 +34,14 @@ export function AnnouncementForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
     setError(null);
     setSuccess(null);
-    const result = await saveAnnouncement(new FormData(e.currentTarget));
+    const result = await saveAnnouncement(new FormData(form));
     if (result.ok) {
       setSuccess(announcement ? "Announcement updated." : "Announcement published.");
-      if (!announcement) e.currentTarget.reset();
+      if (!announcement) form.reset();
       router.refresh();
     } else setError(result.error);
     setLoading(false);

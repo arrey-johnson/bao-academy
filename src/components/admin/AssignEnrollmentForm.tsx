@@ -25,13 +25,14 @@ export function AssignEnrollmentForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
     setError(null);
     setSuccess(null);
-    const result = await assignEnrollment(new FormData(e.currentTarget));
+    const result = await assignEnrollment(new FormData(form));
     if (result.ok) {
       setSuccess("Enrollment assigned.");
-      e.currentTarget.reset();
+      form.reset();
       router.refresh();
     } else setError(result.error);
     setLoading(false);

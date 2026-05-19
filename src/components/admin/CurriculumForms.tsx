@@ -19,13 +19,14 @@ export function AddModuleForm({ courseId }: { courseId: string }) {
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
     setError(null);
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(form);
     fd.set("courseId", courseId);
     const result = await createModule(fd);
     if (result.ok) {
-      e.currentTarget.reset();
+      form.reset();
       router.refresh();
     } else setError(result.error);
     setLoading(false);
@@ -54,13 +55,14 @@ export function AddLessonForm({ moduleId }: { moduleId: string }) {
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
     setError(null);
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(form);
     fd.set("moduleId", moduleId);
     const result = await createLesson(fd);
     if (result.ok) {
-      e.currentTarget.reset();
+      form.reset();
       router.refresh();
     } else setError(result.error);
     setLoading(false);

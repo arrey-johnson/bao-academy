@@ -14,13 +14,14 @@ export function EnrollStudentForm({ courses }: { courses: Course[] }) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
     setError(null);
     setSuccess(null);
-    const result = await enrollStudent(new FormData(e.currentTarget));
+    const result = await enrollStudent(new FormData(form));
     if (result.ok) {
       setSuccess("Student enrolled. They can sign in at /login.");
-      e.currentTarget.reset();
+      form.reset();
     } else {
       setError(result.error);
     }
