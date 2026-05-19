@@ -158,16 +158,9 @@ export function Navbar({ user, fullName, streak }: NavbarProps) {
                 </button>
               </div>
             ) : (
-              <>
-                <Link href="/login">
-                  <Button variant="ghost" size="sm">
-                    Log in
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button size="sm">Get started</Button>
-                </Link>
-              </>
+              <Link href="/login">
+                <Button size="sm">Student login</Button>
+              </Link>
             )}
           </div>
 
@@ -243,16 +236,9 @@ export function Navbar({ user, fullName, streak }: NavbarProps) {
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-col gap-2">
-                  <Link href="/login" onClick={() => setMobileOpen(false)}>
-                    <Button variant="outline" className="w-full">
-                      Log in
-                    </Button>
-                  </Link>
-                  <Link href="/signup" onClick={() => setMobileOpen(false)}>
-                    <Button className="w-full">Get started</Button>
-                  </Link>
-                </div>
+                <Link href="/login" onClick={() => setMobileOpen(false)}>
+                  <Button className="w-full">Student login</Button>
+                </Link>
               )}
             </div>
           </div>

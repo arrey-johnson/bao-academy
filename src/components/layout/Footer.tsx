@@ -5,8 +5,7 @@ import { Logo } from "@/components/brand/Logo";
 const exploreLinks = [
   { href: "/learn/html-css-js", label: "Courses" },
   { href: "/#how-it-works", label: "How we train you" },
-  { href: "/signup", label: "Sign up" },
-  { href: "/login", label: "Log in" },
+  { href: "/login", label: "Student login" },
 ];
 
 const PHONE_DISPLAY = "654 547 772";

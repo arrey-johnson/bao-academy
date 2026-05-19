@@ -12,7 +12,7 @@ export const config = {
     "/learn/:path*",
     "/assignments/:path*",
     "/login",
-    "/signup",
+    "/signup", // redirects to /login
     "/auth/callback",
   ],
 };

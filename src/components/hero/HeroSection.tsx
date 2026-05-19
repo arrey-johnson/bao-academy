@@ -48,9 +48,9 @@ export function HeroSection() {
         </ul>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Link href="/signup">
+          <Link href="/login">
             <Button size="lg" className="gap-2">
-              Start learning
+              Student login
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>

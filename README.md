@@ -53,3 +53,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 5. Run `supabase/full-setup.sql` in the Supabase SQL Editor if the database is empty.
 
 If you see `MIDDLEWARE_INVOCATION_FAILED`, Supabase env vars are usually missing or wrong on Vercel.
+
+## Student accounts (admin-only enrollment)
+
+Public sign-up is disabled. Students **log in only** with credentials you create.
+
+**Enroll a student in Supabase:**
+
+1. [Authentication → Users](https://supabase.com/dashboard/project/zogsfwrcpriugtetdtmd/auth/users) → **Add user** → **Create new user**
+2. Set email + password (or send invite email)
+3. Optionally set **User Metadata** → `full_name`
+
+**Lock down self-registration (recommended):**
+
+Authentication → [Providers](https://supabase.com/dashboard/project/zogsfwrcpriugtetdtmd/auth/providers) → Email → disable **Enable sign ups**
