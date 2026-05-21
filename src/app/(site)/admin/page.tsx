@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Users, BookOpen, Megaphone, GraduationCap, ClipboardList } from "lucide-react";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { getAdminOverviewStats } from "@/lib/admin/overview";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { PanelCard } from "@/components/dashboard/PanelCard";
@@ -9,6 +11,12 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
+  const { isSuperAdmin } = await requireAdmin();
+
+  if (!isSuperAdmin) {
+    redirect("/admin/students");
+  }
+
   const {
     studentCount,
     courseCount,

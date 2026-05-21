@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookOpen, Settings } from "lucide-react";
 import { deleteCourse } from "@/app/actions/admin";
+import { requireSuperAdmin } from "@/lib/auth/require-admin";
 import { getCourseWithCurriculum } from "@/lib/admin/queries";
 import { AddModuleForm, ModuleBlock } from "@/components/admin/CurriculumForms";
 import { CourseForm } from "@/components/admin/CourseForm";
@@ -25,6 +26,7 @@ type ModuleRow = {
 };
 
 export default async function AdminCourseDetailPage({ params }: Props) {
+  await requireSuperAdmin();
   const { courseId } = await params;
   const data = await getCourseWithCurriculum(courseId);
   if (!data) notFound();

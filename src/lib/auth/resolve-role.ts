@@ -1,5 +1,8 @@
 import type { User } from "@supabase/supabase-js";
-import { isAdminRole } from "@/lib/auth/roles";
+import {
+  isAdminPanelRole,
+  isSuperAdminRole,
+} from "@/lib/auth/roles";
 
 /** Fallback when profiles table is missing or not synced yet. */
 const BUILTIN_ADMIN_EMAILS = [
@@ -41,9 +44,18 @@ export function resolveRole(
   return "student";
 }
 
+/** Super admin — full admin panel. */
+export function resolveIsSuperAdmin(
+  user: User | null | undefined,
+  profileRole?: string | null
+): boolean {
+  return isSuperAdminRole(resolveRole(user, profileRole));
+}
+
+/** Admin panel (super admin or course admin). */
 export function resolveIsAdmin(
   user: User | null | undefined,
   profileRole?: string | null
 ): boolean {
-  return isAdminRole(resolveRole(user, profileRole));
+  return isAdminPanelRole(resolveRole(user, profileRole));
 }

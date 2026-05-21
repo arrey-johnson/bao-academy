@@ -6,7 +6,7 @@ CREATE TABLE public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
   full_name TEXT,
-  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'mentor', 'admin', 'instructor')),
+  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'mentor', 'admin', 'instructor', 'course_admin')),
   current_streak INT NOT NULL DEFAULT 0,
   last_activity_date DATE,
   avatar_url TEXT,
@@ -157,6 +157,19 @@ AS $$
   );
 $$;
 
+CREATE OR REPLACE FUNCTION public.is_admin_panel()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role IN ('admin', 'instructor', 'course_admin')
+  );
+$$;
+
 CREATE OR REPLACE FUNCTION public.is_mentor_or_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -184,8 +197,8 @@ ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "profiles_select_own" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "profiles_select_admin" ON public.profiles FOR SELECT USING (public.is_admin());
-CREATE POLICY "profiles_update_admin" ON public.profiles FOR UPDATE USING (public.is_admin());
+CREATE POLICY "profiles_select_admin" ON public.profiles FOR SELECT USING (public.is_admin_panel());
+CREATE POLICY "profiles_update_admin" ON public.profiles FOR UPDATE USING (public.is_admin_panel());
 
 CREATE POLICY "courses_select_published" ON public.courses FOR SELECT
   USING (published = TRUE OR public.is_admin());
@@ -224,7 +237,7 @@ CREATE POLICY "slides_all_admin" ON public.slides FOR ALL USING (public.is_admin
 CREATE POLICY "enrollments_select_own" ON public.enrollments FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "enrollments_insert_own" ON public.enrollments FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "enrollments_update_own" ON public.enrollments FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "enrollments_admin" ON public.enrollments FOR ALL USING (public.is_admin());
+CREATE POLICY "enrollments_admin" ON public.enrollments FOR ALL USING (public.is_admin_panel());
 
 CREATE POLICY "lesson_progress_own" ON public.lesson_progress FOR ALL USING (auth.uid() = user_id);
 

@@ -12,17 +12,39 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const links = [
-  { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
-  { href: "/admin/students", label: "Students", icon: Users },
-  { href: "/admin/enrollments", label: "Enrollments", icon: GraduationCap },
-  { href: "/admin/courses", label: "Courses", icon: BookOpen },
-  { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
-  { href: "/admin/submissions", label: "Submissions", icon: ClipboardList },
-];
+const allLinks = [
+  {
+    href: "/admin",
+    label: "Overview",
+    icon: LayoutDashboard,
+    exact: true,
+    superAdminOnly: true,
+  },
+  { href: "/admin/students", label: "Students", icon: Users, superAdminOnly: false },
+  {
+    href: "/admin/enrollments",
+    label: "Enrollments",
+    icon: GraduationCap,
+    superAdminOnly: false,
+  },
+  { href: "/admin/courses", label: "Courses", icon: BookOpen, superAdminOnly: true },
+  {
+    href: "/admin/announcements",
+    label: "Announcements",
+    icon: Megaphone,
+    superAdminOnly: true,
+  },
+  {
+    href: "/admin/submissions",
+    label: "Submissions",
+    icon: ClipboardList,
+    superAdminOnly: true,
+  },
+] as const;
 
-export function AdminNav() {
+export function AdminNav({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const pathname = usePathname();
+  const links = allLinks.filter((l) => isSuperAdmin || !l.superAdminOnly);
 
   return (
     <nav className="flex flex-col gap-1">

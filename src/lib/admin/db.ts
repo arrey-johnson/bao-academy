@@ -2,17 +2,27 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { resolveIsAdmin } from "@/lib/auth/resolve-role";
+import {
+  isSuperAdminRole,
+  resolveIsAdmin,
+  resolveRole,
+} from "@/lib/auth/resolve-role";
 
-async function requireAdminUser() {
+export type AdminActionContext = {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  service: Awaited<ReturnType<typeof createServiceClient>>;
+  user: User;
+  role: string;
+  isSuperAdmin: boolean;
+};
+
+async function loadAdminUser(): Promise<AdminActionContext | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login?redirect=/admin");
-  }
+  if (!user) return null;
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -20,18 +30,30 @@ async function requireAdminUser() {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!resolveIsAdmin(user, profile?.role)) {
-    redirect("/dashboard");
-  }
+  const role = resolveRole(user, profile?.role);
+  if (!resolveIsAdmin(user, profile?.role)) return null;
 
-  return { supabase, user };
+  const service = await createServiceClient();
+  return {
+    supabase,
+    service,
+    user,
+    role,
+    isSuperAdmin: isSuperAdminRole(role),
+  };
+}
+
+async function requireAdminUser() {
+  const ctx = await loadAdminUser();
+  if (!ctx) {
+    redirect("/login?redirect=/admin");
+  }
+  return ctx;
 }
 
 /** Cached per request — auth once, reuse service client for all admin reads/writes. */
 export const getAdminContext = cache(async () => {
-  const { supabase, user } = await requireAdminUser();
-  const service = await createServiceClient();
-  return { supabase, service, user };
+  return requireAdminUser();
 });
 
 /** Authenticated admin session + service-role client (bypasses RLS). */
@@ -40,31 +62,20 @@ export async function getAdminServiceClient() {
   return service;
 }
 
-/** For server actions: throws instead of redirecting. */
-export async function getAdminActionContext(): Promise<{
-  supabase: Awaited<ReturnType<typeof createClient>>;
-  service: Awaited<ReturnType<typeof createServiceClient>>;
-  user: User;
-}> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+/** For server actions: any admin-panel role. */
+export async function getAdminActionContext(): Promise<AdminActionContext> {
+  const ctx = await loadAdminUser();
+  if (!ctx) {
     throw new Error("Not authenticated");
   }
+  return ctx;
+}
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!resolveIsAdmin(user, profile?.role)) {
-    throw new Error("Admin access required");
+/** For server actions: super admin only. */
+export async function getSuperAdminActionContext(): Promise<AdminActionContext> {
+  const ctx = await getAdminActionContext();
+  if (!ctx.isSuperAdmin) {
+    throw new Error("Super admin access required");
   }
-
-  const service = await createServiceClient();
-  return { supabase, service, user };
+  return ctx;
 }

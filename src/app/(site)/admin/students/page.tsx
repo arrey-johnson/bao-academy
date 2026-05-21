@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ROLE_LABELS } from "@/lib/auth/roles";
 import { getAdminStudentsPageData } from "@/lib/admin/students";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { PanelCard } from "@/components/dashboard/PanelCard";
@@ -52,7 +53,11 @@ export default async function AdminStudentsPage() {
             {
               key: "role",
               header: "Role",
-              cell: (s) => <span className="badge capitalize">{s.role}</span>,
+              cell: (s) => (
+                <span className="badge capitalize">
+                  {ROLE_LABELS[s.role] ?? s.role}
+                </span>
+              ),
             },
             {
               key: "streak",

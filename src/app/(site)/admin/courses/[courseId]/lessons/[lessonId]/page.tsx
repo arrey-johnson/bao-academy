@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { requireSuperAdmin } from "@/lib/auth/require-admin";
 import { getLessonWithSlides } from "@/lib/admin/queries";
 import { LessonSlidesPanel } from "@/components/admin/LessonSlidesPanel";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ courseId: string; lessonId: string }> };
 
 export default async function AdminLessonEditorPage({ params }: Props) {
+  await requireSuperAdmin();
   const { courseId, lessonId } = await params;
   const data = await getLessonWithSlides(lessonId);
   if (!data) notFound();

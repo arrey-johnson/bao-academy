@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { requireSuperAdmin } from "@/lib/auth/require-admin";
 import { getAdminCoursesList } from "@/lib/admin/courses";
 import { CourseRowActions } from "@/components/admin/CourseRowActions";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function AdminCoursesPage() {
+  await requireSuperAdmin();
   const courses = await getAdminCoursesList();
 
   return (

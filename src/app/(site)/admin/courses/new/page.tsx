@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { requireSuperAdmin } from "@/lib/auth/require-admin";
 import { CourseForm } from "@/components/admin/CourseForm";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { PanelCard } from "@/components/dashboard/PanelCard";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminNewCoursePage() {
+export default async function AdminNewCoursePage() {
+  await requireSuperAdmin();
   return (
     <div>
       <DashboardHeader

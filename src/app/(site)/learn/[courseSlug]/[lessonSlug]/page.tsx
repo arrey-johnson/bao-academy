@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getLessonWithSlides } from "@/lib/data/courses";
+import { getLessonWithSlides, getNextLessonSlug } from "@/lib/data/courses";
 import { SlidePlayer } from "@/components/slides/SlidePlayer";
 import type { Slide, SlideContent } from "@/types/slides";
 
@@ -24,6 +24,7 @@ export default async function LessonPage({
   if (!data) notFound();
 
   const { course, lesson, slides } = data;
+  const nextLessonSlug = await getNextLessonSlug(courseSlug, lesson.id);
 
   const { data: progress } = await supabase
     .from("lesson_progress")
@@ -56,6 +57,8 @@ export default async function LessonPage({
         slides={typedSlides}
         lessonId={lesson.id}
         lessonTitle={lesson.title}
+        courseSlug={courseSlug}
+        nextLessonSlug={nextLessonSlug}
         initialIndex={progress?.current_slide_index ?? 0}
         completedSlideIds={progress?.completed_slide_ids ?? []}
         bookmarkIndex={progress?.bookmark_slide_index ?? null}

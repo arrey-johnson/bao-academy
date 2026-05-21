@@ -3,7 +3,15 @@
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/lib/admin/utils";
 import { slugify } from "@/lib/admin/utils";
-import { getAdminContext } from "@/lib/admin/assert";
+import {
+  COURSE_ADMIN_ASSIGNABLE_ROLES,
+  PROTECTED_ACCOUNT_ROLES,
+  SUPER_ADMIN_ASSIGNABLE_ROLES,
+} from "@/lib/auth/roles";
+import {
+  getAdminActionContext,
+  getSuperAdminActionContext,
+} from "@/lib/admin/db";
 
 function fail<T = void>(e: unknown): ActionResult<T> {
   return {
@@ -30,7 +38,7 @@ function revalidateAdmin(courseId?: string) {
 
 export async function enrollStudent(formData: FormData): Promise<ActionResult<{ userId: string }>> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getAdminActionContext();
     const email = String(formData.get("email") ?? "").trim().toLowerCase();
     const password = String(formData.get("password") ?? "");
     const fullName = String(formData.get("fullName") ?? "").trim();
@@ -89,15 +97,35 @@ export async function enrollStudent(formData: FormData): Promise<ActionResult<{ 
 
 export async function updateStudent(formData: FormData): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service, isSuperAdmin } = await getAdminActionContext();
     const userId = String(formData.get("userId") ?? "");
     const fullName = String(formData.get("fullName") ?? "").trim();
     const role = String(formData.get("role") ?? "student");
     const email = String(formData.get("email") ?? "").trim().toLowerCase();
 
     if (!userId) return { ok: false, error: "User ID required." };
-    if (!["student", "mentor", "admin", "instructor"].includes(role)) {
+
+    const assignable = isSuperAdmin
+      ? SUPER_ADMIN_ASSIGNABLE_ROLES
+      : COURSE_ADMIN_ASSIGNABLE_ROLES;
+    if (!assignable.includes(role as (typeof assignable)[number])) {
       return { ok: false, error: "Invalid role." };
+    }
+
+    const { data: target } = await service
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (
+      !isSuperAdmin &&
+      target?.role &&
+      PROTECTED_ACCOUNT_ROLES.includes(
+        target.role as (typeof PROTECTED_ACCOUNT_ROLES)[number]
+      )
+    ) {
+      return { ok: false, error: "You cannot modify this account." };
     }
 
     const { error } = await service
@@ -119,12 +147,29 @@ export async function updateStudent(formData: FormData): Promise<ActionResult> {
 
 export async function resetStudentPassword(formData: FormData): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service, isSuperAdmin } = await getAdminActionContext();
     const userId = String(formData.get("userId") ?? "");
     const password = String(formData.get("password") ?? "");
     if (!userId || password.length < 6) {
       return { ok: false, error: "User and password (min 6 chars) required." };
     }
+
+    if (!isSuperAdmin) {
+      const { data: target } = await service
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+      if (
+        target?.role &&
+        PROTECTED_ACCOUNT_ROLES.includes(
+          target.role as (typeof PROTECTED_ACCOUNT_ROLES)[number]
+        )
+      ) {
+        return { ok: false, error: "You cannot modify this account." };
+      }
+    }
+
     const { error } = await service.auth.admin.updateUserById(userId, { password });
     if (error) return { ok: false, error: error.message };
     return { ok: true };
@@ -135,7 +180,7 @@ export async function resetStudentPassword(formData: FormData): Promise<ActionRe
 
 export async function deleteStudent(userId: string): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     if (!userId) return { ok: false, error: "User ID required." };
     const { error } = await service.auth.admin.deleteUser(userId);
     if (error) return { ok: false, error: error.message };
@@ -150,7 +195,7 @@ export async function deleteStudent(userId: string): Promise<ActionResult> {
 
 export async function assignEnrollment(formData: FormData): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getAdminActionContext();
     const userId = String(formData.get("userId") ?? "");
     const courseId = String(formData.get("courseId") ?? "");
     if (!userId || !courseId) return { ok: false, error: "Student and course required." };
@@ -169,7 +214,7 @@ export async function assignEnrollment(formData: FormData): Promise<ActionResult
 
 export async function removeEnrollment(enrollmentId: string): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getAdminActionContext();
     const { error } = await service.from("enrollments").delete().eq("id", enrollmentId);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
@@ -190,7 +235,7 @@ function formatDbError(message: string): string {
 
 export async function createCourse(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const title = String(formData.get("title") ?? "").trim();
     const slug = String(formData.get("slug") ?? "").trim() || slugify(title);
     const description = String(formData.get("description") ?? "").trim() || null;
@@ -223,7 +268,7 @@ export async function createCourse(formData: FormData): Promise<ActionResult<{ i
 
 export async function updateCourse(formData: FormData): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const id = String(formData.get("id") ?? "");
     const title = String(formData.get("title") ?? "").trim();
     const slug =
@@ -258,7 +303,7 @@ export async function updateCourse(formData: FormData): Promise<ActionResult> {
 
 export async function deleteCourse(courseId: string): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     if (!courseId) return { ok: false, error: "Course ID is required." };
 
     const { error } = await service.from("courses").delete().eq("id", courseId);
@@ -272,7 +317,7 @@ export async function deleteCourse(courseId: string): Promise<ActionResult> {
 
 export async function toggleCoursePublished(courseId: string, published: boolean): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const { error } = await service.from("courses").update({ published }).eq("id", courseId);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
@@ -286,7 +331,7 @@ export async function toggleCoursePublished(courseId: string, published: boolean
 
 export async function deleteModule(moduleId: string): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const { error } = await service.from("modules").delete().eq("id", moduleId);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
@@ -298,7 +343,7 @@ export async function deleteModule(moduleId: string): Promise<ActionResult> {
 
 export async function createModule(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const courseId = String(formData.get("courseId") ?? "");
     const title = String(formData.get("title") ?? "").trim();
     const slug = String(formData.get("slug") ?? "").trim() || slugify(title);
@@ -318,7 +363,7 @@ export async function createModule(formData: FormData): Promise<ActionResult<{ i
 
 export async function createLesson(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const moduleId = String(formData.get("moduleId") ?? "");
     const title = String(formData.get("title") ?? "").trim();
     const slug = String(formData.get("slug") ?? "").trim() || slugify(title);
@@ -346,7 +391,7 @@ export async function createLesson(formData: FormData): Promise<ActionResult<{ i
 
 export async function updateLesson(formData: FormData): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const id = String(formData.get("id") ?? "");
     const { error } = await service
       .from("lessons")
@@ -368,7 +413,7 @@ export async function updateLesson(formData: FormData): Promise<ActionResult> {
 
 export async function deleteLesson(lessonId: string): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const { error } = await service.from("lessons").delete().eq("id", lessonId);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
@@ -382,7 +427,7 @@ export async function deleteLesson(lessonId: string): Promise<ActionResult> {
 
 export async function saveSlide(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const id = String(formData.get("id") ?? "").trim();
     const lessonId = String(formData.get("lessonId") ?? "");
     const title = String(formData.get("title") ?? "").trim() || null;
@@ -422,7 +467,7 @@ export async function saveSlide(formData: FormData): Promise<ActionResult<{ id: 
 
 export async function deleteSlide(slideId: string): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const { error } = await service.from("slides").delete().eq("id", slideId);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
@@ -436,7 +481,7 @@ export async function deleteSlide(slideId: string): Promise<ActionResult> {
 
 export async function saveAnnouncement(formData: FormData): Promise<ActionResult<{ id: string }>> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const id = String(formData.get("id") ?? "").trim();
     const title = String(formData.get("title") ?? "").trim();
     const body = String(formData.get("body") ?? "").trim();
@@ -469,7 +514,7 @@ export async function saveAnnouncement(formData: FormData): Promise<ActionResult
 
 export async function deleteAnnouncement(id: string): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const { error } = await service.from("announcements").delete().eq("id", id);
     if (error) return { ok: false, error: error.message };
     revalidateAdmin();
@@ -486,7 +531,7 @@ export async function updateSubmissionStatus(
   status: string
 ): Promise<ActionResult> {
   try {
-    const { service } = await getAdminContext();
+    const { service } = await getSuperAdminActionContext();
     const allowed = ["draft", "submitted", "in_review", "needs_revision", "approved"];
     if (!allowed.includes(status)) return { ok: false, error: "Invalid status." };
 
@@ -504,7 +549,7 @@ export async function updateSubmissionStatus(
 
 export async function reviewSubmission(formData: FormData): Promise<ActionResult> {
   try {
-    const { service, user } = await getAdminContext();
+    const { service, user } = await getSuperAdminActionContext();
     const submissionId = String(formData.get("submissionId") ?? "");
     const comments = String(formData.get("comments") ?? "").trim();
     const approved = formData.get("approved") === "on";

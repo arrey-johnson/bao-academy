@@ -11,7 +11,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { profile } = await requireAdmin();
+  const { profile, isSuperAdmin } = await requireAdmin();
 
   return (
     <DashboardShell maxWidth="6xl" className="!px-0">
@@ -23,7 +23,7 @@ export default async function AdminLayout({
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-bao-light">
-                Admin
+                {isSuperAdmin ? "Super admin" : "Course admin"}
               </p>
               <p className="text-sm font-medium text-[var(--foreground)]">
                 {profile.full_name ?? "Administrator"}
@@ -31,7 +31,7 @@ export default async function AdminLayout({
             </div>
           </div>
           <p className="mb-5 truncate text-xs text-muted">{profile.email}</p>
-          <AdminNav />
+          <AdminNav isSuperAdmin={isSuperAdmin} />
           <Link
             href="/dashboard"
             className="mt-6 inline-flex text-sm text-secondary transition-colors hover:text-[var(--foreground)]"

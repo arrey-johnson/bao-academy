@@ -1,5 +1,40 @@
 import { createClient } from "@/lib/supabase/server";
 
+type LessonRef = {
+  id: string;
+  slug: string;
+  sort_order: number;
+};
+
+type ModuleWithLessons = {
+  sort_order: number;
+  lessons: LessonRef[] | null;
+};
+
+/** Lessons in course order: module sort_order, then lesson sort_order within each module. */
+export function orderCourseLessons(modules: ModuleWithLessons[]): LessonRef[] {
+  return [...modules]
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .flatMap((mod) =>
+      [...(mod.lessons ?? [])].sort((a, b) => a.sort_order - b.sort_order)
+    );
+}
+
+export async function getNextLessonSlug(
+  courseSlug: string,
+  lessonId: string
+): Promise<string | null> {
+  const data = await getCourseLessons(courseSlug);
+  if (!data) return null;
+
+  const ordered = orderCourseLessons(
+    data.modules as ModuleWithLessons[]
+  );
+  const index = ordered.findIndex((l) => l.id === lessonId);
+  if (index < 0 || index >= ordered.length - 1) return null;
+  return ordered[index + 1].slug;
+}
+
 export async function getPublishedCourse(slug: string) {
   const supabase = await createClient();
   const { data: course } = await supabase

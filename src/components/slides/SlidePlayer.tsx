@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SlideBlockRenderer } from "@/components/slides/SlideBlockRenderer";
@@ -12,6 +13,8 @@ type Props = {
   slides: Slide[];
   lessonId: string;
   lessonTitle: string;
+  courseSlug: string;
+  nextLessonSlug: string | null;
   initialIndex: number;
   completedSlideIds: string[];
   bookmarkIndex: number | null;
@@ -21,10 +24,13 @@ export function SlidePlayer({
   slides,
   lessonId,
   lessonTitle,
+  courseSlug,
+  nextLessonSlug,
   initialIndex,
   completedSlideIds,
   bookmarkIndex,
 }: Props) {
+  const router = useRouter();
   const [index, setIndex] = useState(initialIndex);
   const [completed, setCompleted] = useState<Set<string>>(
     () => new Set(completedSlideIds)
@@ -37,11 +43,15 @@ export function SlidePlayer({
   const progress = ((index + 1) / slides.length) * 100;
 
   const persist = useCallback(
-    async (nextIndex: number, markComplete?: string) => {
-      const ids = new Set(completed);
+    async (
+      nextIndex: number,
+      completedIds: Set<string>,
+      markComplete?: string
+    ) => {
+      const ids = new Set(completedIds);
       if (markComplete) ids.add(markComplete);
       setSaving(true);
-      await saveSlideProgress({
+      const result = await saveSlideProgress({
         lessonId,
         currentSlideIndex: nextIndex,
         completedSlideIds: [...ids],
@@ -49,8 +59,9 @@ export function SlidePlayer({
         isCompleted: ids.size >= slides.length,
       });
       setSaving(false);
+      return result;
     },
-    [completed, lessonId, bookmark, slides.length]
+    [lessonId, bookmark, slides.length]
   );
 
   const goNext = async () => {
@@ -62,9 +73,16 @@ export function SlidePlayer({
     if (index < slides.length - 1) {
       const next = index + 1;
       setIndex(next);
-      await persist(next, current.id);
+      await persist(next, nextCompleted);
     } else {
-      await persist(index, current.id);
+      const result = await persist(index, nextCompleted);
+      if (result && "ok" in result && result.ok) {
+        if (nextLessonSlug) {
+          router.push(`/learn/${courseSlug}/${nextLessonSlug}`);
+        } else {
+          router.push(`/learn/${courseSlug}`);
+        }
+      }
     }
   };
 
@@ -99,18 +117,18 @@ export function SlidePlayer({
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
-      <div className="border-b border-zinc-800 px-4 py-3">
+      <div className="border-b border-[var(--surface-border)] px-4 py-3">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <p className="flex-1 truncate text-sm font-medium text-zinc-500">
+          <p className="flex-1 truncate text-sm font-medium text-secondary">
             {lessonTitle}
           </p>
-          <span className="text-xs text-zinc-400">
+          <span className="text-xs text-muted">
             {index + 1} / {slides.length}
           </span>
         </div>
-        <div className="mx-auto mt-2 h-1.5 max-w-3xl overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+        <div className="progress-track mx-auto mt-2 h-1.5 max-w-3xl">
           <div
-            className="h-full rounded-full bg-bao transition-all duration-300"
+            className="progress-fill transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -126,7 +144,7 @@ export function SlidePlayer({
                   ? "bg-bao w-4"
                   : completed.has(s.id)
                     ? "bg-bao/50"
-                    : "bg-zinc-300 dark:bg-zinc-600"
+                    : "bg-[var(--progress-track)]"
               )}
               aria-label={`Slide ${i + 1}`}
             />
@@ -136,7 +154,7 @@ export function SlidePlayer({
 
       <div className="flex flex-1 items-center justify-center p-4 md:p-8">
         <div
-          className="w-full max-w-2xl space-y-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-xl shadow-bao/5 md:p-12"
+          className="surface-card w-full max-w-2xl space-y-6 !rounded-3xl p-8 md:p-12"
           onTouchStart={(e) => {
             const x = e.touches[0].clientX;
             (e.currentTarget as HTMLElement).dataset.touchX = String(x);
@@ -150,7 +168,7 @@ export function SlidePlayer({
             if (diff > 50) goPrev();
           }}
         >
-          <span className="inline-flex items-center gap-1 rounded-full bg-bao/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-bao-light dark:text-bao-muted">
+          <span className="badge-accent inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
             {current.slide_type}
           </span>
           <div className="space-y-4">
@@ -161,7 +179,7 @@ export function SlidePlayer({
         </div>
       </div>
 
-      <div className="sticky bottom-0 border-t border-zinc-800 bg-black/90 px-4 py-4 backdrop-blur">
+      <div className="sticky bottom-0 border-t border-[var(--surface-border)] bg-[var(--surface-card)]/95 px-4 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
           <Button
             variant="ghost"

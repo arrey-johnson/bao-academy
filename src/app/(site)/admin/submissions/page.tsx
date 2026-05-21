@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireSuperAdmin } from "@/lib/auth/require-admin";
 import { getAdminSubmissionsList } from "@/lib/admin/submissions";
 import { SubmissionReviewForm } from "@/components/admin/SubmissionReviewForm";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -7,6 +8,7 @@ import { PanelCard } from "@/components/dashboard/PanelCard";
 export const dynamic = "force-dynamic";
 
 export default async function AdminSubmissionsPage() {
+  await requireSuperAdmin();
   const rows = await getAdminSubmissionsList();
 
   return (

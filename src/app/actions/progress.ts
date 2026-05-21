@@ -90,6 +90,18 @@ export async function saveSlideProgress({
   revalidatePath("/dashboard/progress");
   revalidatePath("/dashboard/bookmarks");
   revalidatePath("/learn", "layout");
+
+  if (isCompleted && courseId) {
+    const { data: course } = await supabase
+      .from("courses")
+      .select("slug")
+      .eq("id", courseId)
+      .single();
+    if (course?.slug) {
+      revalidatePath(`/learn/${course.slug}`);
+    }
+  }
+
   return { ok: true };
 }
 

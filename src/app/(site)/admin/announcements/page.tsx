@@ -1,3 +1,4 @@
+import { requireSuperAdmin } from "@/lib/auth/require-admin";
 import { getAdminAnnouncementsPageData } from "@/lib/admin/announcements";
 import { AnnouncementForm } from "@/components/admin/AnnouncementForm";
 import { AnnouncementList } from "@/components/admin/AnnouncementList";
@@ -7,6 +8,7 @@ import { PanelCard } from "@/components/dashboard/PanelCard";
 export const dynamic = "force-dynamic";
 
 export default async function AdminAnnouncementsPage() {
+  await requireSuperAdmin();
   const { announcements, courses } = await getAdminAnnouncementsPageData();
 
   return (

@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { updateStudent, resetStudentPassword } from "@/app/actions/admin";
 import { AdminMessage } from "@/components/admin/AdminMessage";
 import { Button } from "@/components/ui/button";
+import {
+  COURSE_ADMIN_ASSIGNABLE_ROLES,
+  ROLE_LABELS,
+  SUPER_ADMIN_ASSIGNABLE_ROLES,
+} from "@/lib/auth/roles";
 
 type Student = {
   id: string;
@@ -13,13 +18,23 @@ type Student = {
   role: string;
 };
 
-export function StudentEditForm({ student }: { student: Student }) {
+export function StudentEditForm({
+  student,
+  isSuperAdmin,
+}: {
+  student: Student;
+  isSuperAdmin: boolean;
+}) {
   const router = useRouter();
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSuccess, setPwSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const assignableRoles = isSuperAdmin
+    ? SUPER_ADMIN_ASSIGNABLE_ROLES
+    : COURSE_ADMIN_ASSIGNABLE_ROLES;
 
   const fieldClass = "auth-input !pl-4 w-full";
   const labelClass = "block text-sm font-medium mb-2";
@@ -84,11 +99,18 @@ export function StudentEditForm({ student }: { student: Student }) {
               Role
             </label>
             <select id="role" name="role" defaultValue={student.role} className={fieldClass}>
-              <option value="student">Student</option>
-              <option value="mentor">Mentor</option>
-              <option value="instructor">Instructor</option>
-              <option value="admin">Admin</option>
+              {assignableRoles.map((role) => (
+                <option key={role} value={role}>
+                  {ROLE_LABELS[role] ?? role}
+                </option>
+              ))}
             </select>
+            {isSuperAdmin && (
+              <p className="mt-2 text-xs text-muted">
+                Choose &quot;Course admin&quot; for staff who only manage students and
+                enrollments.
+              </p>
+            )}
           </div>
         </div>
         <AdminMessage error={profileError} success={profileSuccess} />

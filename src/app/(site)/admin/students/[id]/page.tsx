@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteStudent, removeEnrollment } from "@/app/actions/admin";
+import { requireAdmin } from "@/lib/auth/require-admin";
+import { PROTECTED_ACCOUNT_ROLES } from "@/lib/auth/roles";
 import { getAdminStudentDetail } from "@/lib/admin/students";
 import { AssignEnrollmentForm } from "@/components/admin/AssignEnrollmentForm";
 import { DeleteButton } from "@/components/admin/DeleteButton";
@@ -15,10 +17,38 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function AdminStudentDetailPage({ params }: Props) {
   const { id } = await params;
+  const { isSuperAdmin } = await requireAdmin();
   const data = await getAdminStudentDetail(id);
   if (!data) notFound();
 
   const { student, enrollments, courses } = data;
+  const isProtectedAccount = PROTECTED_ACCOUNT_ROLES.includes(
+    student.role as (typeof PROTECTED_ACCOUNT_ROLES)[number]
+  );
+
+  if (!isSuperAdmin && isProtectedAccount) {
+    return (
+      <div>
+        <DashboardHeader
+          title={student.full_name ?? student.email ?? "Account"}
+          description="This account can only be managed by a super admin."
+          action={
+            <Link
+              href="/admin/students"
+              className="text-sm text-secondary hover:text-[var(--foreground)]"
+            >
+              ← All students
+            </Link>
+          }
+        />
+        <PanelCard>
+          <p className="text-secondary">
+            You do not have permission to edit staff or admin accounts.
+          </p>
+        </PanelCard>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -33,7 +63,7 @@ export default async function AdminStudentDetailPage({ params }: Props) {
       />
 
       <PanelCard title="Profile & access" className="mb-6">
-        <StudentEditForm student={student} />
+        <StudentEditForm student={student} isSuperAdmin={isSuperAdmin} />
       </PanelCard>
 
       <PanelCard title="Enroll in course" className="mb-6">
@@ -84,17 +114,19 @@ export default async function AdminStudentDetailPage({ params }: Props) {
         />
       </PanelCard>
 
-      <PanelCard title="Danger zone">
-        <p className="mb-4 text-sm text-secondary">
-          Permanently deletes the auth account and profile. Cannot be undone.
-        </p>
-        <DeleteButton
-          label="Delete student"
-          confirmMessage="Delete this student permanently?"
-          onDelete={deleteStudent.bind(null, id)}
-          redirectTo="/admin/students"
-        />
-      </PanelCard>
+      {isSuperAdmin && (
+        <PanelCard title="Danger zone">
+          <p className="mb-4 text-sm text-secondary">
+            Permanently deletes the auth account and profile. Cannot be undone.
+          </p>
+          <DeleteButton
+            label="Delete student"
+            confirmMessage="Delete this student permanently?"
+            onDelete={deleteStudent.bind(null, id)}
+            redirectTo="/admin/students"
+          />
+        </PanelCard>
+      )}
     </div>
   );
 }
